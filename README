@@ -1,0 +1,5 @@
+The Day of Sagittarius III
+
+A multiplayer browser game based off the game found in the melancholy of haruhi suzumiya
+
+The server is based in python and makes use of a http server and websockets. The client is based on Angular.js
