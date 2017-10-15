@@ -1,0 +1,90 @@
+[class *= "col-"] { width: 100%; }
+* { box-sizing: border-box; }
+
+.error{
+    color: maroon;
+    text-align:center;
+    display:block;
+}
+.navbar {
+    color: white;
+    position: relative;
+    display: inline-block;
+    height: auto;
+    background-color: lightslategray;
+    font-size: 150%;
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+}
+.navbar > a{
+    padding: 10px;
+    width: 100%;
+    text-align: center;
+    background-color: inherit;
+    display: none;
+    position: relative;
+}
+div.navbar > a:hover {
+    background-color: darkslategray;
+}
+.navbar:hover > a{
+    display: block;
+}
+a { text-decoration: none; color: inherit; }
+a:visited { color: inherit; }
+input.ng-dirty.ng-invalid {
+    border-color: red;
+}
+[ng:\cloak], [ng-cloak], .ng-cloak {
+    display: none;
+}
+.desktop-yes {
+    display: none !important;
+}
+.desktop-no {
+    display: inherit;
+}
+.box-shadow-menu {
+    display: block !important;
+    position: relative;
+    padding-left: 1.25em;
+}
+.box-shadow-menu:before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.5em;
+    width: 1em;
+    height: 0.15em;
+    background: white;
+    box-shadow: 0 .25em 0 0 white, 0 .5em 0 0 white;
+    border-radius: 10px;
+}
+@media only screen and (min-width: 480px) {
+    .col-0 {width: 0%;}
+    .col-1 { width: 10%; }
+    .col-2 { width: 20%; }
+    .col-3 { width: 30%; }
+    .col-4 { width: 40%; }
+    .col-5 { width: 50%; }
+    .col-6 { width: 60%; }
+    .col-7 { width: 70%; }
+    .col-8 { width: 80%; }
+    .col-9 { width: 90%; }
+    .col-10 { width: 100%; }
+    [class *= "col-"] {float: left;}
+    div.navbar > a {
+        position: relative;
+        display: inline-block;
+        width: auto;
+    }
+    .navbar >a:not(.navbarRight){
+        float: left;
+    }
+    .navbarRight { float: right;}
+    .desktop-yes {
+        display: inherit;
+    }
+    .desktop-no {
+        display: none !important;
+    }
+}
