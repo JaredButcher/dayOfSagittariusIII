@@ -1,6 +1,6 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-def start(port):
+def start(port, data):
     serverAddress = ('', port)
     httpd = HTTPServer(serverAddress, HTTPHandler)
     httpd.serve_forever()
@@ -38,6 +38,9 @@ class HTTPHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def log_message(self, format, *args):
+        return
+    
     def route(self):
         path = self.path.split('/')
         if self.path == "/":
