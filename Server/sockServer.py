@@ -5,75 +5,41 @@ import threading
 clients = []
 
 def start(port, data):
-    loop = asyncio.get_event_loop()
-    serv = asyncio.start_server(handle_echo, '127.0.0.1', 8888, loop=loop)
-    server = loop.run_until_complete(serv)
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    coro = asyncio.start_server(handle_conn, '', port, loop=loop)
+    server = loop.run_until_complete(coro)
+    print("server")
     try:
         loop.run_forever()
     except KeyboardInterrupt:
+        print("interupt")
         pass
+    print("close")
     server.close()
     loop.run_until_complete(server.wait_closed())
     loop.close()
 
-async def connectLoop(port):
-    serv = socket.socket(socket.AF_INET, type=socket.SOCK_STREAM)
-    serv.bind(('', port))
-    serv.listen(4)
-    while True:
-        conn, address = await serv.accept()
-        clients.append(client(conn))
-
+async def handle_conn(reader, writer):
+    print("connection handler")
+    clients.append(client(reader, writer))
 
 class client:
-    def __init__(self, conn):
-        self.conn = conn
+    def __init__(self, reader, writer):
+        self.reader = reader
+        self.writer = writer
+        asyncio.get_event_loop().create_task(self.beginReceiveLoop())
+        print("init")
     
-    async def beginReceiveLoop():
-        data = await comm.recv(1024)
+    async def beginReceiveLoop(self):
+        print("Receive")
+        while True:
+            data = await self.reader.read(100)
+            message = data.decode()
+            print(message)
+            asyncio.get_event_loop().create_task(self.send(str.encode(message)))
+
+    async def send(self, data):
+        self.writer.write(data)
+        await self.writer.drain()
         
-
-async def handle_echo(reader, writer):
-    data = await reader.read(100)
-    message = data.decode()
-    addr = writer.get_extra_info('peername')
-    print("Received %r from %r" % (message, addr))
-
-    print("Send: %r" % message)
-    writer.write(data)
-    await writer.drain()
-
-    print("Close the client socket")
-    writer.close()
-    
-'''
-class ComControl:
-    def send(self, data):
-        """
-        Sends data to the controler
-        :param data: String from ComData
-        """
-        self._loop.run_in_executor(None, self._send, str.encode(data))
-
-    def _receive(self):
-        try:
-            data = self._conn.recv(1024)
-            self._onReceived(data)
-            self._loop.run_in_executor(None, self._receive)
-        except socket.error as e:
-            print("Connection lost")
-            self._loop.run_in_executor(None, self._accept)
-    
-    def _send(self, data):
-        try:
-            self._conn.sendall(data)
-        except socket.error as e:
-            print("Connection lost")
-            self._loop.run_in_executor(None, self._accept)
-
-    def _onReceived(self, data):
-        pass
-
-    def _onDisconnect(self):
-        pass
-'''
