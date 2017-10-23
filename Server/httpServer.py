@@ -1,6 +1,11 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from http import cookies
+import dataManagement
+
+dataStor = dataManagement.data()
 
 def start(port, data):
+    dataStor = data
     serverAddress = ('', port)
     httpd = HTTPServer(serverAddress, HTTPHandler)
     httpd.serve_forever()
@@ -35,8 +40,25 @@ class HTTPHandler(BaseHTTPRequestHandler):
         body = bytes(self.route(), "utf8")
         self.send_response(self.statusCode)
         self.send_header("Content-type", self.mime)
+        self.handleCookies()
         self.end_headers()
         self.wfile.write(body)
+
+    def handleCookies(self):
+        cook = cookies.SimpleCookie()
+        if "Cookie" in self.headers:
+            cook.load(self.headers["Cookie"])
+            if "session" in cook:
+                self.session = dataStor.getSession(cook["session"].value)
+                if self.session != None:
+                    return
+        session = dataStor.makeSession()
+        cook["session"] = session.getId()
+        cook["session"]["path"] = "/"
+        cook["session"]["max-age"] = 259200
+        self.send_header("Set-Cookie", str(cook["session"])[12:])
+        self.session = session
+
 
     def log_message(self, format, *args):
         return
@@ -66,8 +88,9 @@ class HTTPHandler(BaseHTTPRequestHandler):
             fContent = fContent.format(error = self.statusCode)
             return self.layout(fContent)
 
-    def cSag(self, unused):
-        return self.cHome()
+    def cSag(self, view = None):
+        self.statusCode = 404
+        return self.cHome("error")
 
     def cStatic(self, unused):
         path = self.path[len("/"):]
