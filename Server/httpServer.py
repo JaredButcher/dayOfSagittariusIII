@@ -1,8 +1,11 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from http import cookies
 import dataManagement
+import time
+import math
 
 dataStor = dataManagement.data()
+_timeP = 0
 
 def start(port, data):
     dataStor = data
@@ -10,6 +13,16 @@ def start(port, data):
     httpd = HTTPServer(serverAddress, HTTPHandler)
     httpd.serve_forever()
 
+def timeF(lable):
+    global _timeP
+    timeR = math.floor(((time.perf_counter() - _timeP) * 1000000))
+    print(lable + ": " + str(timeR))
+    _timeP = time.perf_counter()
+    return timeR
+
+def timeCalibrate():
+    global _timeP
+    _timeP = time.perf_counter()
 
 class HTTPHandler(BaseHTTPRequestHandler):
 
@@ -33,16 +46,24 @@ class HTTPHandler(BaseHTTPRequestHandler):
     def do_HEAD(self):
         self.send_response(200)
         self.send_header("Content-type", "text/html")
+        self.handleCookies()
         self.end_headers()
     def do_GET(self):
+        #self.totalTime = 0
+        #timeCalibrate()
         self.statusCode = 200
         self.mime = "text/html"
         body = bytes(self.route(), "utf8")
+        #self.totalTime += timeF("Body")
         self.send_response(self.statusCode)
         self.send_header("Content-type", self.mime)
         self.handleCookies()
+        #self.totalTime += timeF("Cookies")
         self.end_headers()
         self.wfile.write(body)
+        #self.totalTime += timeF("Write")
+        #print("Total: " + str(self.totalTime))
+        #print()
 
     def handleCookies(self):
         cook = cookies.SimpleCookie()
