@@ -14,8 +14,6 @@ def start(port, data):
     server = loop.run_until_complete(coro)
     try:
         loop.run_forever()
-    except KeyboardInterrupt:
-        pass
     except socket.error as e:
         print(e)
     print("close")
