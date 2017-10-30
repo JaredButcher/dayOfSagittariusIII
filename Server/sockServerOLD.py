@@ -1,4 +1,4 @@
-import websockets
+import socket
 import asyncio
 import threading
 import dataManagement
@@ -12,19 +12,19 @@ def start(port, data):
     dataStor = data
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    coro = websockets.server.serve(handle_conn, host='', port=port, loop=loop)
+    coro = asyncio.start_server(handle_conn, '', port, loop=loop)
     server = loop.run_until_complete(coro)
-    loop.run_forever()
+    try:
+        loop.run_forever()
+    except socket.error as e:
+        print(e)
     print("close")
     server.close()
     loop.run_until_complete(server.wait_closed())
     loop.close()
-    
-async def handle_conn(conn, Uri):
-    print("URI: " + Uri)
-    user = client(conn)
-    clients.append(user)
-    await user.beginReceiveLoop()
+
+async def handle_conn(reader, writer):
+    clients.append(client(reader, writer))
 
 @unique
 class fields(IntEnum):
@@ -39,17 +39,18 @@ class actions(IntEnum):
     servers = 4
 
 class client:
-    def __init__(self, conn):
-        self.conn = conn
+    def __init__(self, reader, writer):
+        self.reader = reader
+        self.writer = writer
         self.alive = True
         self.errorCount = 0
-        self.session = None
+        asyncio.get_event_loop().create_task(self.beginReceiveLoop())
     
     async def beginReceiveLoop(self):
         while self.alive:
             try:
-                data = await self.conn.recv()
-            except websockets.exceptions.ConnectionClosed as e:
+                data = await self.reader.read(8192)
+            except socket.error as e:
                 print(e)
                 self.destory()
                 break;
@@ -96,15 +97,16 @@ class client:
                 '''
 
     async def send(self, data):
+        self.writer.write(data)
         try:
-            await self.conn.send(data)
-        except websockets.exceptions.ConnectionClosed as e:
+            await self.writer.drain()
+        except socket.error as e:
             print(e)
             self.destory()
     
     def destory(self):
         self.alive = False
-        if self.session:
+        if(self.session):
             self.session.rmClient()
         clients.remove(self)
         
