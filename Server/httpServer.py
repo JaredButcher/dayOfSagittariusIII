@@ -109,9 +109,13 @@ class HTTPHandler(BaseHTTPRequestHandler):
             fContent = fContent.format(error = self.statusCode)
             return self.layout(fContent)
 
-    def cSag(self, view = None):
-        self.statusCode = 404
-        return self.cHome("error")
+    def cSag(self, view = "servers"):
+        if view == "servers":
+            return self.layout(self.readFile("sagittarius/servers.html"))
+        elif view == "game":
+            return self.layout(self.readFile("sagittarius/game.html"))
+        else:
+            return self.cHome("error")
 
     def cStatic(self, unused):
         path = self.path[len("/"):]

@@ -16,8 +16,5 @@ class sagGame:
     def loop(self):
         while self.live:
 
-class player:
-    def __init__(self, session, client):
-        self.session = session
-        self.client = client
+
 
