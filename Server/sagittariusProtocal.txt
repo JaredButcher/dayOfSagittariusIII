@@ -1,0 +1,160 @@
+field:
+    action = 0
+    session = 1
+    servers = 2 #[browser]
+    gameId = 3
+    game = 4 #game
+    chatContext = 5
+    chatMessage = 6
+    team = 7
+    name = 8
+    transform = 9
+
+action:
+    ack = 0
+    errorStop = 1
+    errorResend = 2
+    init = 3
+    servers = 4
+    join = 5
+    joinFailed = 6
+    makeGame = 7
+    chat = 8
+    joinTeam = 9
+    name = 10
+    command = 11
+    update = 12
+
+browser:
+    id = 0
+    name = 1
+    owner = 2
+    players = 3
+    maxPlayers = 4
+    fleetSize = 5
+    fleetPoints = 6
+    gameMode = 7
+    teams = 8
+
+game:
+    browserInfo = 0 #browser
+    players = 1 #[player]
+    running = 2
+    winner = 3
+
+player:
+    id = 0
+    name = 1
+    team = 2
+    fleets = 3 #[fleet]
+    scouts = 4 #[transform]
+    primary = 5 #weapon
+    primaryAmmo = 6
+    secondary = 7 #weapon
+    secondaryAmmo = 8
+    attack = 9
+    defense = 10
+    scout = 11
+    speed = 12
+    isFlagship = 13
+
+transform:
+    id = 0
+    position = 1 #{x,y}
+    rotation = 2 
+    velocity = 3 #{x,y}
+    hide = 4
+    destory = 5
+
+fleet:
+    size = 0
+    transform = 1 #transform
+
+weapon:
+    lazer = 0
+    missle = 1
+    rail = 2
+    mine = 3
+    fighter = 4
+    plazma = 5
+    emc = 6
+    jump = 7
+
+chatContext:
+    browser = 0
+    game = 1
+    team = 2
+
+command:
+    destination = 0 #transform
+    fire = 1
+    target = 2 #transform
+    split = 3
+    merge = 4 #[transform]
+
+
+PacketTypes///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Initialize connection:
+    Client:
+        action: init
+        session: x
+    Server:
+        action: ack
+
+Chat:
+    Client:
+        action: chat
+        chatContext: x
+        chatMessage: x
+
+    Server:
+        action chat
+        chatContext: x
+        chatMessage: x
+
+Server Browser:
+    Client:
+        action: servers
+    Server:
+        action: servers
+        servers: [ {All browser attributes} ]
+
+Make Game:
+    Client:
+        action: makeGame
+        browser: x [ {All browser attributes except id and players} ]
+    Server:
+        action: join
+        game: x [ {All game attributes} ]
+
+Join Game:
+    Client:
+        action: join
+        gameId: x
+    Server join failure:
+        action: joinFailed
+    Server:
+        action: join
+        game: x [ {All game attributes} ]
+
+Join Team:
+    Client:
+        action: joinTeam
+        team: x
+
+Change Name:
+    Client:
+        action: name
+        name: x
+
+Command:
+    Client:
+        action: command
+        transform: x #transform.id
+        command: x {command}
+
+Update:
+    Server:
+        action: update
+        game: x

@@ -55,7 +55,6 @@ class client:
                 break;
             #Start processing and consturcting response
             print(str(data))
-            '''
             res = {}
             errorRe = False
             try:
@@ -93,7 +92,6 @@ class client:
             #Send message
             if(res != {}):
                 asyncio.get_event_loop().create_task(self.send(str.encode(json.dumps(res))))
-                '''
 
     async def send(self, data):
         try:
