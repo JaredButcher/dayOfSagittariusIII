@@ -32,28 +32,35 @@ class player:
         self.team = team
 
 class transform:
-    def __init__(self, x = 0,y = 0, rot = 0, maxSpeed = 0, maxRot = 0):
-        self.x = x
-        self.y = y
-        self.rot = rot
+    def __init__(self, x = 0,y = 0, r = 0, maxSpeed = 0, maxRot = 0):
+        self.x, self.tx, self.y self.ty = x, x, y, y
+        self.r, self.tr = r
         self.maxSpeed = maxSpeed
         self.maxRot = maxRot
 
     def goTo(self, x,y):
-        self.tx = x
-        self.ty = y
-        self.vx = 
-        self.vy
+        self.tx, self.ty = x, y
+        tempX, tempY = x - self.x, y - self.y
+        self.vx = ((tempX^2)/(tempX^2 + tempY^2))^.5
+        self.vy = ((tempY^2)/(tempX^2 + tempY^2))^.5
 
-    def turn(self, rot):
-        self.tr = rot
+    def turnTo(self, rotation):
+        self.tr = rotation
 
     def update(self, time):
         if(self.x != self.tx or self.y != self.ty):
             if(self.rot != self.rt):
                 
             else:
-                tempX = (self.tx - self.x) self.maxSpeed
+                if(self.x < self.tx):
+                    self.x = max(self.tx, self.x + self.vx) 
+                else:
+                    self.x = min(self.tx, self.x + self.vx) 
+                if(self.y < self.ty):
+                    self.y = max(self.ty, self.y + self.vy) 
+                else:
+                    self.y = min(self.ty, self.y + self.vy) 
+
 
 
 
