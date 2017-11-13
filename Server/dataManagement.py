@@ -3,6 +3,7 @@ import hashlib
 import binascii
 from secrets import SystemRandom
 import sockServer
+from sagittarius import sagGame
 
 rng = SystemRandom()
 
@@ -11,6 +12,7 @@ class data:
         self.lock = RLock()
         self.sessions = []
         self.players = []
+        self.sagGames = []
     def makeSession(self):
         with self.lock:
             sessionT = session()
@@ -31,6 +33,11 @@ class data:
                     if sess.getClient() == client:
                         return sess
                 return None
+    def makeSagGame(self, size, ships, player):
+        with self.lock:
+            game = sagGame(size, ships)
+            game.addPlayer(player)
+            self.sagGames.append(game)
 
 class session:
     def __init__(self):

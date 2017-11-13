@@ -12,7 +12,7 @@ class sagGame:
     def addPlayer(self, player):
         self.players.append(player)
 
-    def recCommand(self, )
+    #def recCommand(self, )
 
     def loop(self):
         while self.live:
