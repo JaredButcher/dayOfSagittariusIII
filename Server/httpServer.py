@@ -4,8 +4,10 @@ import dataManagement
 import time
 import math
 
-dataStor = dataManagement.data()
+dataStor = None
 _timeP = 0
+
+#TODO Userfy this class
 
 def start(port, data):
     dataStor = data

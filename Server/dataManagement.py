@@ -10,59 +10,61 @@ rng = SystemRandom()
 class data:
     def __init__(self):
         self.lock = RLock()
-        self.sessions = []
-        self.players = []
+        self.users = []
         self.sagGames = []
-    def makeSession(self):
+
+    def makeUser(self):
         with self.lock:
-            sessionT = session()
-            self.sessions.append(sessionT)
-            return sessionT
-    def closeSession(self, session):
+            newUser = user()
+            self.users.append(newUser)
+            return user
+
+    def getUser(self, session):
+        for user in self.users:
+            if user.getSession() == session:
+                return user
+
+    def removeUser(self, user):
         with self.lock:
-            self.sessions.remove(session)
-    def getSession(self, session=None, client=None):
-        with self.lock:
-            if(session):
-                for sess in self.sessions:
-                    if sess.getId() == session:
-                        return sess
-                return None
-            elif(client):
-                for sess in self.sessions:
-                    if sess.getClient() == client:
-                        return sess
-                return None
+            self.users.remove(user)
+
+    #TODO take a look at the player here
     def makeSagGame(self, size, ships, player):
         with self.lock:
             game = sagGame(size, ships)
             game.addPlayer(player)
             self.sagGames.append(game)
 
-class session:
-    def __init__(self):
+class user:
+    def __init__(self, session=None, sock=None):
         self.lock = RLock()
-        self.userId = None
-        self.id = str(rng.getrandbits(k=64))
+        self.session = session
+        if(session == None):
+            self.session = getNewSessionId()
+        self.sock = sock
+        self.game = None
+
+    def setSock(self, sock):
+        with self.lock:
+            self.sock = sock
+
+    def getSock(self):
+        with self.lock:
+            return self.sock
+
+    def getSession(self):
+        return self.session
+
+
+#A poor and insecure unique random number generator
+#TODO replace
+start = rng.getrandbits(k=64)
+key = rng.getrandbits(k=64)
+def getNewSessionId():
+    parts = []
+    for b1, b2 in zip(start, key):
+        parts.append(bytes(b1 ^ b2))
+    start = (start + 1) % 2^64
+    return b''.join(parts)
     
-    def getId(self):
-        with self.lock:
-            return self.id
-
-    def UserId(self, userId=None):
-        with self.lock:
-            if userId != None:
-                self.userId = userId
-            return self.userId
-
-    def setClient(self, client):
-        with self.lock:
-            self.client = client
-
-    def getClient(self, message):
-        with self.lock:
-            return self.client
-
-    def rmClient(self):
-        with self.lock:
-            self.client = None
+    

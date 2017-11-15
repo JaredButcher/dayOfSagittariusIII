@@ -8,6 +8,8 @@ from enum import IntEnum, unique
 clients = []
 dataStor = None
 
+#TODO Userfy this class
+
 def start(port, data):
     dataStor = data
     loop = asyncio.new_event_loop()
