@@ -1,10 +1,14 @@
 import dataManagement
 import threading
 import math
+import time
+
+#TODO Userfy this class
 
 class sagGame:
     def __init__(self, size, ships):
         self.players = []
+        self.transforms = []
         self.live = True
         self.gameLoop = threading.Thread(target=self.loop)
         self.gameLoop.start()
@@ -12,14 +16,26 @@ class sagGame:
     def addPlayer(self, player):
         self.players.append(player)
 
+    def addTransform(self, transform):
+        self.transforms.append(transform)
+
+    def rmTransform(self, transform):
+        self.transforms.remove(transform)
+
     #def recCommand(self, )
 
     def loop(self):
+        timeP = time.perf_counter() 
         while self.live:
+            timeC = time.perf_counter()
+            delta = timeC - timeP
+            timeP = timeC
+            for transform in self.transforms:
+                transform.update(delta)
 
 class player:
-    def __init__(self, socket, team, ships, attack, defense, speed, scout, wepPri, wepSec):
-        self.socket = socket
+    def __init__(self, user, team, ships, attack, defense, speed, scout, wepPri, wepSec):
+        self.user = user
         self.wepPri = wepPri
         self.wepSec = wepSec
         self.attack = attack
@@ -32,11 +48,13 @@ class player:
         self.team = team
 
 class transform:
-    def __init__(self, x = 0,y = 0, r = 0, maxSpeed = 0, Traverse = 0):
-        self.x, self.tx, self.y self.ty = x, x, y, y
+    def __init__(self, game, x = 0,y = 0, r = 0, maxSpeed = 0, Traverse = 0):
+        self.x, self.tx, self.y, self.ty = x, x, y, y
         self.r, self.tr = r
         self.maxSpeed = maxSpeed
         self.trav = Traverse
+        self.game = game
+        self.game.addTransform(self)
 
     def goTo(self, x,y):
         self.tx, self.ty = x, y
@@ -47,25 +65,27 @@ class transform:
     def turnTo(self, rotation):
         self.tr = rotation
         self.trd = self.r - self.tr - math.pi
-        self.trd != -1 * math.pi or self.trd = 0
 
     def update(self, time):
-        if(self.r != self.rt):
+        if(self.r != self.tr):
             if(self.trd > 0):
-                self.r = self.r + self.trav
+                self.r = self.r + self.trav * time
             else:
-                self.r = self.r - self.trav
+                self.r = self.r - self.trav * time
             if((self.r - self.tr + math.pi) * self.trd < 0):
                 self.r = self.tr
         if(self.x != self.tx or self.y != self.ty):
             if(self.x < self.tx):
-                self.x = max(self.tx, self.x + self.vx) 
+                self.x = max(self.tx, self.x + self.vx * time) 
             else:
-                self.x = min(self.tx, self.x + self.vx) 
+                self.x = min(self.tx, self.x + self.vx * time) 
             if(self.y < self.ty):
-                self.y = max(self.ty, self.y + self.vy) 
+                self.y = max(self.ty, self.y + self.vy * time) 
             else:
-                self.y = min(self.ty, self.y + self.vy) 
+                self.y = min(self.ty, self.y + self.vy * time) 
+
+    def destory(self):
+        self.game.rmTransform(self)
 
 
 

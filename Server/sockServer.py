@@ -5,12 +5,12 @@ import dataManagement
 import json
 from enum import IntEnum, unique
         
-clients = []
 dataStor = None
 
 #TODO Userfy this class
 
 def start(port, data):
+    global dataStor
     dataStor = data
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -25,7 +25,6 @@ def start(port, data):
 async def handle_conn(conn, Uri):
     print("URI: " + Uri)
     user = client(conn)
-    clients.append(user)
     await user.beginReceiveLoop()
 
 class client:
@@ -33,9 +32,8 @@ class client:
         self.conn = conn
         self.alive = True
         self.errorCount = 0
-        self.session = None
+        self.user = None
         self.receiveDele = []
-        self.onReceiveAdd(self.initalConn)
         self.error = False
 
     '''
@@ -58,31 +56,31 @@ class client:
             #Start processing and consturcting response
             print(str(data))
             res = {}
-            errorRe = False
             message = None
             try:
                 message = json.load(data.decode())
             except json.JSONDecodeError as e:
                 print(e.msg)
+                self.sendError(error.badRequest)
+            if self.user == None:
+                self.initalConn(message)
             for dele in self.receiveDele:
                 dele(message)
             if not self.error:
                 self.errorCount = 0
             self.error = False
-            if self.errorCount > 10:
-                self.destory()
     
     def initalConn(self, message):
+        global dataStor
         print(json.dumps(message))
         if field.action in message and message[field.action] == action.init:
             if field.session in message:
-                user = dataStor.getSession(field.session)
+                user = dataStor.getUser(field.session)
                 if(user != None):
                     user.setClient(self)
-                    self.session = user
-                    self.onReceiveRm(self.initalConn)
+                    self.user = user
                     return
-        self.sendError()
+        self.sendError(error.badInitalConn)
 
     def sendError(self, errorCode = 0):
         self.errorCount += 1
@@ -103,9 +101,8 @@ class client:
     
     def destory(self):
         self.alive = False
-        if self.session:
-            self.session.rmClient()
-        clients.remove(self)
+        if self.user:
+            self.user.rmClient()
 
 @unique
 class field(IntEnum):
@@ -139,6 +136,8 @@ class error(IntEnum):
     stop = 1
     joinFail = 2
     createFail = 3
+    badRequest = 4
+    badInitalConn = 5
 @unique
 class browser(IntEnum):
     id = 0

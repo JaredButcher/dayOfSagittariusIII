@@ -7,9 +7,8 @@ import math
 dataStor = None
 _timeP = 0
 
-#TODO Userfy this class
-
 def start(port, data):
+    global dataStor
     dataStor = data
     serverAddress = ('', port)
     httpd = HTTPServer(serverAddress, HTTPHandler)
@@ -68,19 +67,20 @@ class HTTPHandler(BaseHTTPRequestHandler):
         #print()
 
     def handleCookies(self):
+        global dataStor
         cook = cookies.SimpleCookie()
         if "Cookie" in self.headers:
             cook.load(self.headers["Cookie"])
             if "session" in cook:
-                self.session = dataStor.getSession(cook["session"].value)
-                if self.session != None:
+                self.user = dataStor.getUser(cook["session"].value)
+                if self.user != None:
                     return
-        session = dataStor.makeSession()
-        cook["session"] = session.getId()
+        user = dataStor.makeUser()
+        cook["session"] = user.getSession()
         cook["session"]["path"] = "/"
         cook["session"]["max-age"] = 259200
         self.send_header("Set-Cookie", str(cook["session"])[12:])
-        self.session = session
+        self.user = user
 
 
     def log_message(self, format, *args):
