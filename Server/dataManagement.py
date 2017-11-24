@@ -1,11 +1,11 @@
 from threading import RLock
 import hashlib
-import binascii
-from secrets import SystemRandom
+import secrets
 import sockServer
+import binascii
 from sagittarius import sagGame
 
-rng = SystemRandom()
+rng = secrets.SystemRandom()
 
 class data:
     def __init__(self):
@@ -17,7 +17,7 @@ class data:
         with self.lock:
             newUser = user()
             self.users.append(newUser)
-            return user
+            return newUser
 
     def getUser(self, session):
         for user in self.users:
@@ -58,13 +58,16 @@ class user:
 
 #A poor and insecure unique random number generator
 #TODO replace
-start = rng.getrandbits(k=64)
-key = rng.getrandbits(k=64)
+size = 128
+start = rng.getrandbits(k=size)
+key = rng.getrandbits(k=size).to_bytes(int(size / 8), byteorder="big")
 def getNewSessionId():
+    global start, key, size
     parts = []
-    for b1, b2 in zip(start, key):
-        parts.append(bytes(b1 ^ b2))
-    start = (start + 1) % 2^64
-    return b''.join(parts)
+    for b1, b2 in zip(start.to_bytes(int(size / 8), byteorder="big"), key):
+        parts.append("%x" % (b1 ^ b2))
+    start = (start + rng.getrandbits(k=int(size / 2))) % 2^size
+    print("Message: " + ''.join(parts))
+    return ''.join(parts)
     
     

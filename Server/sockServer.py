@@ -52,13 +52,13 @@ class client:
             except websockets.exceptions.ConnectionClosed as e:
                 print(e)
                 self.destory()
-                break;
+                break
             #Start processing and consturcting response
-            print(str(data))
+            print("Message: " + data)
             res = {}
             message = None
             try:
-                message = json.load(data.decode())
+                message = json.loads(data)
             except json.JSONDecodeError as e:
                 print(e.msg)
                 self.sendError(error.badRequest)
@@ -179,6 +179,7 @@ class transform(IntEnum):
     velocity = 3 #{x,y}
     hide = 4
     destory = 5
+    target = 6 #transform
 @unique
 class fleet(IntEnum):
     size = 0
