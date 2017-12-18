@@ -82,6 +82,11 @@ class client:
                     return
         self.sendError(error.badInitalConn)
 
+    def serverBrowser(self, message):
+        global dataStor
+        if field.action in message and message[field.action] == action.servers:
+            asyncio.get_event_loop().create_task(self.send(str.encode(json.dumps(dataStor.getSagInfo()))))
+
     def sendError(self, errorCode = 0):
         self.errorCount += 1
         self.error = True
@@ -179,7 +184,7 @@ class transform(IntEnum):
     velocity = 3 #{x,y}
     hide = 4
     destory = 5
-    target = 6 #transform
+    rVelocity = 6
 @unique
 class fleet(IntEnum):
     size = 0

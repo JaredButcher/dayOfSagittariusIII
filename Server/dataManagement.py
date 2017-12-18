@@ -12,6 +12,7 @@ class data:
         self.lock = RLock()
         self.users = []
         self.sagGames = []
+        self.idCounter = 0;
 
     def makeUser(self):
         with self.lock:
@@ -28,12 +29,19 @@ class data:
         with self.lock:
             self.users.remove(user)
 
-    #TODO take a look at the player here
-    def makeSagGame(self, size, ships, player):
+    def makeSagGame(self, owner, size, ships):
         with self.lock:
-            game = sagGame(size, ships)
-            game.addPlayer(player)
+            game = sagGame(self.getNewId(), owner, size, ships)
             self.sagGames.append(game)
+
+    def getSagInfo(self):
+        info = []
+        for game in self.sagGames:
+            info.append(game.getInfo())
+
+    def getNewId(self):
+        self.idCounter += 1
+        return self.idCounter
 
 class user:
     def __init__(self, session=None, sock=None):
@@ -54,6 +62,12 @@ class user:
 
     def getSession(self):
         return self.session
+
+    def getName(self):
+        return self.name
+
+    def setName(self, name):
+        self.name = name
 
 
 #A poor and insecure unique random number generator

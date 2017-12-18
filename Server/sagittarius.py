@@ -7,9 +7,16 @@ import sockServer
 class sagGame:
     UPDATE_RATE = 30 #Game updates per second, goal 30 min 10
 
-    def __init__(self, owner, size, ships):
+    def __init__(self, id, owner, size, ships, points, teams, mode):
         self.players = []
         self.transforms = []
+        self.id = id
+        self.owner = owner
+        self.maxPlayers = size
+        self.fleetSize = ships
+        self.points = points
+        self.teams = teams
+        self.mode = mode
         self.addPlayer(owner)
         self.live = True
         self.idCounter = 0
@@ -20,8 +27,11 @@ class sagGame:
         player.setGame(self, self.getNewId())
         self.players.append(player)
 
+    def rmPlayer(self, player):
+        self.players.remove(player)
+
     def addTransform(self, transform):
-        transform.setGame(self, getNewId)
+        transform.setGame(self, self.getNewId())
         self.transforms.append(transform)
 
     def rmTransform(self, transform):
@@ -32,6 +42,18 @@ class sagGame:
         return self.idCounter
 
     def getInfo(self):
+        info = {}
+        info[sockServer.browser.id] = self.id
+        info[sockServer.browser.owner] = self.owner
+        info[sockServer.browser.maxPlayers] = self.maxPlayers
+        info[sockServer.browser.fleetSize] = self.fleetSize
+        info[sockServer.browser.fleetPoints] = self.points
+        info[sockServer.browser.gameMode] = self.mode
+        info[sockServer.browser.teams] = self.teams
+        info[sockServer.browser.players] = []
+        for player in self.players:
+            info[sockServer.browser.players].append(player.getInfo())
+        return info;
 
 
     #def recCommand(self, )
@@ -65,34 +87,59 @@ class player:
         self.game = game
         self.id = id
 
-class transform:
-    def __init__(self, game = None, position = 0,0, rotaion = 0, maxSpeed = 0, Traverse = 0):
+    def getInfo(self):
+        info = {}
+        info[sockServer.player.id] = self.id
+        info[sockServer.player.name] = self.user.getName()
+        info[sockServer.player.team] = self.team
+        info[sockServer.player.fleets] = []
+        info[sockServer.player.scouts] = []
+        info[sockServer.player.primary] = self.wepPri
+        info[sockServer.player.primaryAmmo] = None
+        info[sockServer.player.secondary] = self.wepSec
+        info[sockServer.player.secondaryAmmo] = None
+        info[sockServer.player.attack] = self.attack
+        info[sockServer.player.defense] = self.defense
+        info[sockServer.player.scout] = self.scout
+        info[sockServer.player.speed] = self.speed
+        info[sockServer.player.isFlagship] = False
+        for fleet in self.fleets:
+            fInfo = {}
+            fInfo[sockServer.fleet.size] = fleet.size
+            fInfo[sockServer.fleet.transform] = fleet.transform.getInfo()
+            info[sockServer.player.fleets].append(fInfo)
+        for scout in self.scouts:
+            info[sockServer.player.scouts].append(scout.transform.getInfo())
+        return info;
+
+class transform: #Base class for all gameobjects
+    def __init__(self, game = None, position = 0, rotaion = 0, speed = 0, traverse = 0):
         self.rot, self.targetRot = rotaion
         self.pos, self.targtPos = position
         self.vel = 0, 0
-        self.changeRot, self.changePos = False
-        self.maxSpeed = maxSpeed
-        self.trav = Traverse
+        self.rVel = 0
+        self.changeRot = False
+        self.changePos = False
+        self.speed = speed
+        self.trav = traverse
         self.game = game
         self.game.addTransform(self)
 
-    def goTo(self, x,y):
-        self.targtPos = x, y
-        tempPos = self.targtPos[0] - self.pos[0], self.targtPos[1] - self.pos[1]
-        self.vel = ((tempPos[0]^2)/(tempPos[0]^2 + tempPos[1]^2))^.5, ((tempPos[1]^2)/(tempPos[0]^2 + tempPos[1]^2))^.5
+    def goTo(self, target):
+        self.targtPos = target
+        adTarg = target[0] - self.pos[0], target[1] - self.pos[1]
+        vel = (adTarg[0]^2 + adTarg[1]^2)^.5 / self.speed
+        self.vel = adTarg[0] / vel, adTarg[1] / vel
 
     def turnTo(self, rotation):
         self.targetRot = rotation
-        self.rotDirection = self.rot - self.targetRot - math.pi
+        self.rVel = self.trav * sign(self.rot - self.targetRot - math.pi)
 
     def update(self, time):
         if(self.rot != self.targetRot):
             self.changeRot = True
-            if(self.rotDirection > 0):
-                self.rot = self.rot + self.trav * time
-            else:
-                self.rot = self.rot - self.trav * time
-            if((self.rot - self.targetRot + math.pi) * self.trd < 0):
+            self.rot = self.rot + self.rVel * time
+            if(sign(self.rot - self.targetRot - math.pi) != sign(self.rVel)):
                 self.rot = self.targetRot
         if(self.pos != self.targtPos):
             self.changePos = True
@@ -111,12 +158,12 @@ class transform:
         out[sockServer.transform.target] = {}
         if(self.changeRot):
             out[sockServer.transform.rotation] = self.rot
-            out[sockServer.transform.target][sockServer.transform.rotation] = self.targetRot
+            out[sockServer.transform.rVelocity]= self.rVel
+            self.changeRot = False
         if(self.changePos):
             out[sockServer.transform.position] = {'x': self.pos[0], 'y': self.pos[1]}
             out[sockServer.transform.velocity] = {'x': self.vel[0], 'y': self.vel[1]}
-            out[sockServer.transform.target][sockServer.transform.position] = {'x': self.targtPos[0], 'y': self.targtPos[1]}
-        self.changePos, self.changeRot = False
+            self.changePos = False
         return out
 
     def destory(self):
@@ -126,6 +173,21 @@ class transform:
         self.game = game
         self.id = id
 
+    def getGame():
+        return self.game
 
+    def getInfo(self):
+        info = {}
+        info[sockServer.transform.id] = self.id
+        info[sockServer.transform.position] = {'x': self.pos[0], 'y': self.pos[1]}
+        info[sockServer.transform.rotation] = self.rot
+        info[sockServer.transform.velocity] = {'x': self.vel[0], 'y': self.vel[1]}
+        info[sockServer.transform.rVelocity] = self.rVel
+
+class fleet:
+    def __init__(self, size, transform):
+        self.transform = (transform.game, transform.pos, transform.rot, transform.maxSpeed, transform.trav)
+
+sign = lambda x: x and (1, -1)[x < 0]
 
 
