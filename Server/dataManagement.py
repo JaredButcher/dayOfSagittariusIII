@@ -29,9 +29,9 @@ class data:
         with self.lock:
             self.users.remove(user)
 
-    def makeSagGame(self, owner, size, ships):
+    def makeSagGame(self, owner, size, ships, points, teams, mode):
         with self.lock:
-            game = sagGame(self.getNewId(), owner, size, ships)
+            game = sagGame(self.getNewId(), owner, size, ships, points, teams, mode)
             self.sagGames.append(game)
 
     def getSagInfo(self):

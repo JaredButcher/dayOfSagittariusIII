@@ -99,6 +99,43 @@ var command = {
     merge: 4 
 };
 
+var scenes = {
+    start: 0,
+    makeGame: 1,
+    servers: 2,
+    lobby: 3,
+    game: 4
+};
+var currentScene;
+
+function scene(current){
+    if(current != currentScene){
+        document.getElementById("start").hidden = true;
+        document.getElementById("makeGame").hidden = true;
+        document.getElementById("servers").hidden = true;
+        document.getElementById("lobby").hidden = true;
+        document.getElementById("game").hidden = true;
+        switch(current){
+            case scenes.start:
+                document.getElementById("start").hidden = false;
+            break;
+            case scenes.makeGame:
+                document.getElementById("makeGame").hidden = false;
+            break;
+            case scenes.servers:
+                document.getElementById("servers").hidden = false;
+            break;
+            case scenes.lobby:
+                document.getElementById("lobby").hidden = false;
+            break;
+            case scenes.game:
+                document.getElementById("game").hidden = false;
+            break;
+        }
+        currentScene = current;
+    }
+}
+
 var Conn = new WebSocket("ws://" + window.location.hostname + ":8001/sagittarius");
 
 Conn.onopen = function (event) {
@@ -144,6 +181,7 @@ function getCookie(cook){
     }
     return "";
 }
+
 var delta = 0;
 var lastFrameTime = 0;
 var MAX_FRAMERATE = 30; //TODO: find a reasonable number for this, 60 is goal
@@ -160,4 +198,8 @@ function gameLoop(timestamp){
     //Update, draw
     
     requestAnimationFrame(gameLoop)
+}
+
+function start(){
+    scene(scenes.start);
 }
