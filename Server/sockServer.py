@@ -3,7 +3,7 @@ import asyncio
 import threading
 import dataManagement
 import json
-from enum import IntEnum, unique
+from enum import Enum, unique
         
 dataStor = None
 
@@ -59,13 +59,23 @@ class client:
             message = None
             try:
                 message = json.loads(data)
+                if field.action.value in message:
+                    if self.user == None:
+                        self.initalConn(message)
+                    elif message[field.action.value] == action.name.value:
+                        res[field.action.value] = action.name.value;
+                        if self.user.setName(message[str(field.name.value)]):
+                            res[field.name.value] = self.user.getName()
+                        else:
+                            res[field.error.value] = error.createFail.value
+                        self.send(res)
+                    elif message[field.action.value] == action.servers.value:
+                        self.send(dataStor.getSagInfo())
+                    for dele in self.receiveDele:
+                        dele(message)
             except json.JSONDecodeError as e:
                 print(e.msg)
                 self.sendError(error.badRequest)
-            if self.user == None:
-                self.initalConn(message)
-            for dele in self.receiveDele:
-                dele(message)
             if not self.error:
                 self.errorCount = 0
             self.error = False
@@ -73,32 +83,32 @@ class client:
     def initalConn(self, message):
         global dataStor
         print(json.dumps(message))
-        if field.action in message and message[field.action] == action.init:
-            if field.session in message:
-                user = dataStor.getUser(field.session)
+        if message[field.action.value] == action.init.value:
+            if field.session.value in message:
+                user = dataStor.getUser(message[field.session.value])
+                print(user)
                 if(user != None):
-                    user.setClient(self)
+                    user.setSock(self)
                     self.user = user
                     return
         self.sendError(error.badInitalConn)
-
-    def serverBrowser(self, message):
-        global dataStor
-        if field.action in message and message[field.action] == action.servers:
-            asyncio.get_event_loop().create_task(self.send(str.encode(json.dumps(dataStor.getSagInfo()))))
 
     def sendError(self, errorCode = 0):
         self.errorCount += 1
         self.error = True
         res = {}
-        res[field.action] = action.error
-        res[field.error] = errorCode
+        res[field.action.value] = action.error.value
+        res[field.error.value] = errorCode
         if self.errorCount > 5:
-            res[field.error] = error.stop
-        asyncio.get_event_loop().create_task(self.send(str.encode(json.dumps(res))))
+            res[field.error.value] = error.stop.value
+        self.send(res)
 
-    async def send(self, data):
+    def send(self, data):
+        asyncio.get_event_loop().create_task(self._sendHelper(json.dumps(data)))
+
+    async def _sendHelper(self, data):
         try:
+            print("SendHelp: " + str(data))
             await self.conn.send(data)
         except websockets.exceptions.ConnectionClosed as e:
             print(e)
@@ -110,104 +120,104 @@ class client:
             self.user.rmClient()
 
 @unique
-class field(IntEnum):
-    action = 0
-    session = 1
-    servers = 2 #[browser]
-    gameId = 3
-    game = 4 #game
-    chatContext = 5
-    chatMessage = 6
-    team = 7
-    name = 8
-    transform = 9
-    error = 10
+class field(Enum):
+    action = "0"
+    session = "1"
+    servers = "2" #[browser]
+    gameId = "3"
+    game = "4" #game
+    chatContext = "5"
+    chatMessage = "6"
+    team = "7"
+    name = "8"
+    transform = "9"
+    error = "10"
 @unique
-class action(IntEnum):
-    ack = 0
-    error = 1
-    update = 2
-    init = 3
-    servers = 4
-    join = 5
-    name = 6
-    makeGame = 7
-    chat = 8
-    joinTeam = 9
-    command = 10
+class action(Enum):
+    ack = "0"
+    error = "1"
+    update = "2"
+    init = "3"
+    servers = "4"
+    join = "5"
+    name = "6"
+    makeGame = "7"
+    chat = "8"
+    joinTeam = "9"
+    command = "10"
 @unique
-class error(IntEnum):
-    repeat = 0
-    stop = 1
-    joinFail = 2
-    createFail = 3
-    badRequest = 4
-    badInitalConn = 5
+class error(Enum):
+    repeat = "0"
+    stop = "1"
+    joinFail = "2"
+    createFail = "3"
+    badRequest = "4"
+    badInitalConn = "5"
 @unique
-class browser(IntEnum):
-    id = 0
-    name = 1
-    owner = 2
-    players = 3
-    maxPlayers = 4
-    fleetSize = 5
-    fleetPoints = 6
-    gameMode = 7
-    teams = 8
+class browser(Enum):
+    id = "0"
+    name = "1"
+    owner = "2"
+    players = "3"
+    maxPlayers = "4"
+    fleetSize = "5"
+    fleetPoints = "6"
+    gameMode = "7"
+    teams = "8"
 @unique
-class game(IntEnum):
-    browserInfo = 0 #browser
-    players = 1 #[player]
-    running = 2
-    winner = 3
+class game(Enum):
+    browserInfo = "0" #browser
+    players = "1" #[player]
+    running = "2"
+    winner = "3"
 @unique
-class player(IntEnum):
-    id = 0
-    name = 1
-    team = 2
-    fleets = 3 #[fleet]
-    scouts = 4 #[transform]
-    primary = 5 #weapon
-    primaryAmmo = 6
-    secondary = 7 #weapon
-    secondaryAmmo = 8
-    attack = 9
-    defense = 10
-    scout = 11
-    speed = 12
-    isFlagship = 13
+class player(Enum):
+    id = "0"
+    name = "1"
+    team = "2"
+    fleets = "3" #[fleet]
+    scouts = "4" #[transform]
+    primary = "5" #weapon
+    primaryAmmo = "6"
+    secondary = "7" #weapon
+    secondaryAmmo = "8"
+    attack = "9"
+    defense = "10"
+    scout = "11"
+    speed = "12"
+    isFlagship = "13"
 @unique
-class transform(IntEnum):
-    id = 0
-    position = 1 #{x,y}
-    rotation = 2 
-    velocity = 3 #{x,y}
-    hide = 4
-    destory = 5
-    rVelocity = 6
+class transform(Enum):
+    id = "0"
+    position = "1" #{x,y}
+    rotation = "2" 
+    velocity = "3" #{x,y}
+    hide = "4"
+    destory = "5"
+    rVelocity = "6"
 @unique
-class fleet(IntEnum):
-    size = 0
-    transform = 1 #transform
+class fleet(Enum):
+    size = "0"
+    transform = "1" #transform
 @unique
-class weapon(IntEnum):
-    lazer = 0
-    missle = 1
-    rail = 2
-    mine = 3
-    fighter = 4
-    plazma = 5
-    emc = 6
-    jump = 7
+class weapon(Enum):
+    lazer = "0"
+    missle = "1"
+    rail = "2"
+    mine = "3"
+    fighter = "4"
+    plazma = "5"
+    emc = "6"
+    jump = "7"
 @unique
-class chatContext(IntEnum):
-    browser = 0
-    game = 1
-    team = 2
+class chatContext(Enum):
+    browser = "0"
+    game = "1"
+    team = "2"
 @unique
-class command(IntEnum):
-    destination = 0 #transform
-    fire = 1
-    target = 2 #transform
-    split = 3
-    merge = 4 #[transform]
+class command(Enum):
+    destination = "0" #transform
+    fire = "1"
+    target = "2" #transform
+    split = "3"
+    merge = "4" #[transform]

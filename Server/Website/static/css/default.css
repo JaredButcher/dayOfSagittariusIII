@@ -1,7 +1,10 @@
+body{
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+}
 .error{
     color: maroon;
-    text-align:center;
-    display:block;
+    display: inline-block;
+    visibility: hidden;
 }
 .navbar {
     color: white;
@@ -11,7 +14,6 @@
     background-color: lightslategray;
     font-size: 150%;
     width: 100%;
-    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
 }
 .navbar > a{
     padding: 10px;
@@ -32,9 +34,7 @@ a:visited { color: inherit; }
 input.ng-dirty.ng-invalid {
     border-color: red;
 }
-[ng:\cloak], [ng-cloak], .ng-cloak {
-    display: none;
-}
+
 .desktop-yes {
     display: none !important;
 }
@@ -66,6 +66,10 @@ input.ng-dirty.ng-invalid {
     padding-top: 10px;
     color: white;
     text-align: center
+}
+h1{
+    font-size: 30px;
+    margin: 10px;
 }
 @media only screen and (min-width: 640px) and (-webkit-max-device-pixel-ratio: 1.5) {
     div.navbar > a {

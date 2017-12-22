@@ -1,16 +1,25 @@
 <script src="/static/js/sagittarius.js"></script>
-<div id="start">
+<link type="text/css" href="/static/css/game.css" rel="stylesheet"/>
+<div id="start" class="center">
     <h1>The Day of Sagittarius III</h1>
-    <button onclick='scene(scenes.servers);'>Server Browser</button>
-    <button onclick='scene(scenes.makeGame);'>Make Game</button>
+    <div class="row">
+        <label>Enter a name</label>
+        <input id="userName" type="text" />
+        <p class="error" id="userNameError">* Name unavailble</p>
+    </div>
+    <button onclick='setName();'>Set Name</button>
+    <div id="startButtons" class="row">
+        <button class="startNav" onclick='scene(scenes.servers);'>Server Browser</button>
+        <button class="startNav" onclick='scene(scenes.makeGame);'>Make Game</button>
+    </div>
 </div>
 <div id="servers">
     <h1>Server Browser</h1>
 </div>
-<div id="makeGame">
+<div id="makeGame" class="center">
     <h1>Make new game</h1>
     <label>Name</label><input type="text" />
-
+    <label>Name</label><input type="text" />
 </div>
 <div id="lobby">
     <h1>Lobby</h1>

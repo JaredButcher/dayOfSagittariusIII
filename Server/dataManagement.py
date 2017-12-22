@@ -8,7 +8,8 @@ from sagittarius import sagGame
 rng = secrets.SystemRandom()
 
 class data:
-    def __init__(self):
+    def __init__(self, debug):
+        self.debug = debug
         self.lock = RLock()
         self.users = []
         self.sagGames = []
@@ -67,7 +68,9 @@ class user:
         return self.name
 
     def setName(self, name):
-        self.name = name
+        with self.lock:
+            self.name = name
+            return self.name
 
 
 #A poor and insecure unique random number generator
