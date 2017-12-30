@@ -36,17 +36,9 @@ class client:
         self.receiveDele = []
         self.error = False
 
-    '''
-    delegate: (data) json string
-    '''
-    def onReceiveAdd(self, delegate):
-        self.receiveDele.append(delegate)
-
-    def onReceiveRm(self, delegate):
-        self.receiveDele.remove(delegate)
-    
     async def beginReceiveLoop(self):
         while self.alive:
+            global dataStor;
             try:
                 data = await self.conn.recv()
             except websockets.exceptions.ConnectionClosed as e:
@@ -60,38 +52,51 @@ class client:
             try:
                 message = json.loads(data)
                 if field.action.value in message:
-                    if self.user == None:
-                        self.initalConn(message)
+                    #INITAL CONNECTION---------------------------------------------------------
+                    if self.user is None: 
+                        if message[field.action.value] == action.init.value:
+                            if field.session.value in message:
+                                user = dataStor.getUser(message[field.session.value])
+                                print(user)
+                                if(user != None):
+                                    user.setSock(self)
+                                    self.user = user
+                                    if not self.user.getName() is None:
+                                        res[field.action.value] = action.name.value;
+                                        res[field.name.value] = self.user.getName()
+                                        self.send(res)
+                        if self.user is None:
+                            self.sendError(error.badInitalConn.value)
+                    #SET NAME-------------------------------------------------------------------
                     elif message[field.action.value] == action.name.value:
-                        res[field.action.value] = action.name.value;
-                        if self.user.setName(message[str(field.name.value)]):
+                        if dataStor.setUserName(self.user, message[field.name.value]):
+                            res[field.action.value] = action.name.value
                             res[field.name.value] = self.user.getName()
+                            self.send(res)
                         else:
-                            res[field.error.value] = error.createFail.value
-                        self.send(res)
+                            self.sendError(error.createFail.value)
+                    #SERVER BROWSER-------------------------------------------------------------
                     elif message[field.action.value] == action.servers.value:
-                        self.send(dataStor.getSagInfo())
-                    for dele in self.receiveDele:
-                        dele(message)
+                        res[field.action.value] = action.servers.value
+                        res[field.servers.value] = dataStor.getSagInfo()
+                        self.send(res)
+                    #MAKE GAME--------------------------------------------------------------------
+                    elif message[field.action.value] == action.makeGame.value:
+                        gameB = message[field.game.value][game.browserInfo.value]
+                        sagGame = dataStor.makeSagGame(self.user, gameB[browser.name.value], int(gameB[browser.maxPlayers.value]),
+                        int(gameB[browser.fleetSize.value]), int(gameB[browser.fleetPoints.value]))
+                        if sagGame is None:
+                            self.sendError(error.createFail.value)
+                        else:
+                            res[field.action.value] = action.join.value
+                            res[field.game.value] = {game.browserInfo.value: sagGame.getInfo()}
+                            self.send(res)
             except json.JSONDecodeError as e:
                 print(e.msg)
                 self.sendError(error.badRequest)
             if not self.error:
                 self.errorCount = 0
             self.error = False
-    
-    def initalConn(self, message):
-        global dataStor
-        print(json.dumps(message))
-        if message[field.action.value] == action.init.value:
-            if field.session.value in message:
-                user = dataStor.getUser(message[field.session.value])
-                print(user)
-                if(user != None):
-                    user.setSock(self)
-                    self.user = user
-                    return
-        self.sendError(error.badInitalConn)
 
     def sendError(self, errorCode = 0):
         self.errorCount += 1
@@ -117,7 +122,7 @@ class client:
     def destory(self):
         self.alive = False
         if self.user:
-            self.user.rmClient()
+            self.user.setSock(None)
 
 @unique
 class field(Enum):

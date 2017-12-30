@@ -7,17 +7,17 @@ import sockServer
 class sagGame:
     UPDATE_RATE = 30 #Game updates per second, goal 30 min 10
 
-    def __init__(self, id, owner, size, ships, points, teams, mode):
+    def __init__(self, id, owner, name, size, ships, points, teams = 2, mode = 1):
         self.players = []
         self.transforms = []
         self.id = id
         self.owner = owner
+        self.name = name;
         self.maxPlayers = size
         self.fleetSize = ships
         self.points = points
         self.teams = teams
         self.mode = mode
-        self.addPlayer(owner)
         self.live = True
         self.idCounter = 0
         self.gameLoop = threading.Thread(target=self.loop)
@@ -43,18 +43,23 @@ class sagGame:
 
     def getInfo(self):
         info = {}
-        info[sockServer.browser.id] = self.id
-        info[sockServer.browser.owner] = self.owner
-        info[sockServer.browser.maxPlayers] = self.maxPlayers
-        info[sockServer.browser.fleetSize] = self.fleetSize
-        info[sockServer.browser.fleetPoints] = self.points
-        info[sockServer.browser.gameMode] = self.mode
-        info[sockServer.browser.teams] = self.teams
-        info[sockServer.browser.players] = []
-        for player in self.players:
-            info[sockServer.browser.players].append(player.getInfo())
+        info[sockServer.browser.id.value] = self.id
+        info[sockServer.browser.owner.value] = self.owner.getName()
+        info[sockServer.browser.name.value] = self.name
+        info[sockServer.browser.maxPlayers.value] = self.maxPlayers
+        info[sockServer.browser.fleetSize.value] = self.fleetSize
+        info[sockServer.browser.fleetPoints.value] = self.points
+        info[sockServer.browser.gameMode.value] = self.mode
+        info[sockServer.browser.teams.value] = self.teams
+        info[sockServer.browser.players.value] = len(self.players)
         return info;
 
+    def getGameInfo(self):
+        pass
+        '''
+        for player in self.players:
+            info[sockServer.browser.players.value].append(player.getInfo())
+            '''
 
     #def recCommand(self, )
 
@@ -89,27 +94,27 @@ class player:
 
     def getInfo(self):
         info = {}
-        info[sockServer.player.id] = self.id
-        info[sockServer.player.name] = self.user.getName()
-        info[sockServer.player.team] = self.team
-        info[sockServer.player.fleets] = []
-        info[sockServer.player.scouts] = []
-        info[sockServer.player.primary] = self.wepPri
-        info[sockServer.player.primaryAmmo] = None
-        info[sockServer.player.secondary] = self.wepSec
-        info[sockServer.player.secondaryAmmo] = None
-        info[sockServer.player.attack] = self.attack
-        info[sockServer.player.defense] = self.defense
-        info[sockServer.player.scout] = self.scout
-        info[sockServer.player.speed] = self.speed
-        info[sockServer.player.isFlagship] = False
+        info[sockServer.player.id.value] = self.id
+        info[sockServer.player.name.value] = self.user.getName()
+        info[sockServer.player.team.value] = self.team
+        info[sockServer.player.fleets.value] = []
+        info[sockServer.player.scouts.value] = []
+        info[sockServer.player.primary.value] = self.wepPri
+        info[sockServer.player.primaryAmmo.value] = None
+        info[sockServer.player.secondary.value] = self.wepSec
+        info[sockServer.player.secondaryAmmo.value] = None
+        info[sockServer.player.attack.value] = self.attack
+        info[sockServer.player.defense.value] = self.defense
+        info[sockServer.player.scout.value] = self.scout
+        info[sockServer.player.speed.value] = self.speed
+        info[sockServer.player.isFlagship.value] = False
         for fleet in self.fleets:
             fInfo = {}
-            fInfo[sockServer.fleet.size] = fleet.size
-            fInfo[sockServer.fleet.transform] = fleet.transform.getInfo()
-            info[sockServer.player.fleets].append(fInfo)
+            fInfo[sockServer.fleet.size.value] = fleet.size
+            fInfo[sockServer.fleet.transform.value] = fleet.transform.getInfo()
+            info[sockServer.player.fleets.value].append(fInfo)
         for scout in self.scouts:
-            info[sockServer.player.scouts].append(scout.transform.getInfo())
+            info[sockServer.player.scouts.value].append(scout.transform.getInfo())
         return info;
 
 class transform: #Base class for all gameobjects
@@ -154,15 +159,15 @@ class transform: #Base class for all gameobjects
 
     def getChanges(self):
         out = {}
-        out[sockServer.transform.id] = self.id
-        out[sockServer.transform.target] = {}
+        out[sockServer.transform.id.value] = self.id
+        out[sockServer.transform.target.value] = {}
         if(self.changeRot):
-            out[sockServer.transform.rotation] = self.rot
-            out[sockServer.transform.rVelocity]= self.rVel
+            out[sockServer.transform.rotation.value] = self.rot
+            out[sockServer.transform.rVelocity.value]= self.rVel
             self.changeRot = False
         if(self.changePos):
-            out[sockServer.transform.position] = {'x': self.pos[0], 'y': self.pos[1]}
-            out[sockServer.transform.velocity] = {'x': self.vel[0], 'y': self.vel[1]}
+            out[sockServer.transform.position.value] = {'x': self.pos[0], 'y': self.pos[1]}
+            out[sockServer.transform.velocity.value] = {'x': self.vel[0], 'y': self.vel[1]}
             self.changePos = False
         return out
 
@@ -178,16 +183,14 @@ class transform: #Base class for all gameobjects
 
     def getInfo(self):
         info = {}
-        info[sockServer.transform.id] = self.id
-        info[sockServer.transform.position] = {'x': self.pos[0], 'y': self.pos[1]}
-        info[sockServer.transform.rotation] = self.rot
-        info[sockServer.transform.velocity] = {'x': self.vel[0], 'y': self.vel[1]}
-        info[sockServer.transform.rVelocity] = self.rVel
+        info[sockServer.transform.id.value] = self.id
+        info[sockServer.transform.position.value] = {'x': self.pos[0], 'y': self.pos[1]}
+        info[sockServer.transform.rotation.value] = self.rot
+        info[sockServer.transform.velocity.value] = {'x': self.vel[0], 'y': self.vel[1]}
+        info[sockServer.transform.rVelocity.value] = self.rVel
 
 class fleet:
     def __init__(self, size, transform):
         self.transform = (transform.game, transform.pos, transform.rot, transform.maxSpeed, transform.trav)
 
 sign = lambda x: x and (1, -1)[x < 0]
-
-

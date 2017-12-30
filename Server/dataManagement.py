@@ -13,7 +13,7 @@ class data:
         self.lock = RLock()
         self.users = []
         self.sagGames = []
-        self.idCounter = 0;
+        self.idCounter = 0
 
     def makeUser(self):
         with self.lock:
@@ -30,19 +30,29 @@ class data:
         with self.lock:
             self.users.remove(user)
 
-    def makeSagGame(self, owner, size, ships, points, teams, mode):
+    def makeSagGame(self, owner, name, size, ships, points, teams = 2, mode = 1):
+        name = name[:30]
+        if not (2 <= size <= 12 and 100 <= ships <= 1000000 and 0 <= points <= 400): return None
         with self.lock:
-            game = sagGame(self.getNewId(), owner, size, ships, points, teams, mode)
+            game = sagGame(self.getNewId(), owner, name, size, ships, points, teams, mode)
             self.sagGames.append(game)
+            return game;
 
     def getSagInfo(self):
         info = []
         for game in self.sagGames:
-            info.append(game.getInfo())
+            info.append({sockServer.game.browserInfo.value: game.getInfo()})
 
     def getNewId(self):
         self.idCounter += 1
         return self.idCounter
+
+    def setUserName(self, user, name):
+        name = name[:20]
+        for x in self.users:
+            if x.getName() == name: return None
+        user.setName(name)
+        return name
 
 class user:
     def __init__(self, session=None, sock=None):
@@ -52,6 +62,8 @@ class user:
             self.session = getNewSessionId()
         self.sock = sock
         self.game = None
+        self.name = None
+
 
     def setSock(self, sock):
         with self.lock:
@@ -70,7 +82,6 @@ class user:
     def setName(self, name):
         with self.lock:
             self.name = name
-            return self.name
 
 
 #A poor and insecure unique random number generator

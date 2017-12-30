@@ -1,30 +1,42 @@
 <script src="/static/js/sagittarius.js"></script>
 <link type="text/css" href="/static/css/game.css" rel="stylesheet"/>
-<div id="start" class="center">
+<div id="startButtons">
+    <button class="startNav" onclick='scene(scenes.servers);'>Server Browser</button>
+    <button class="startNav" onclick='scene(scenes.makeGame);'>Make Game</button>
+</div>
+<div id="start" hidden>
     <h1>The Day of Sagittarius III</h1>
-    <div class="row">
-        <label>Enter a name</label>
-        <input id="userName" type="text" />
+    <div>
+        <label>Enter a name</label><input id="userName" type="text" />
         <p class="error" id="userNameError">* Name unavailble</p>
     </div>
     <button onclick='setName();'>Set Name</button>
-    <div id="startButtons" class="row">
-        <button class="startNav" onclick='scene(scenes.servers);'>Server Browser</button>
-        <button class="startNav" onclick='scene(scenes.makeGame);'>Make Game</button>
-    </div>
 </div>
-<div id="servers">
+<div id="servers" hidden>
     <h1>Server Browser</h1>
+    <div id="serverList"></div>
 </div>
-<div id="makeGame" class="center">
-    <h1>Make new game</h1>
-    <label>Name</label><input type="text" />
-    <label>Name</label><input type="text" />
+<div id="makeGame" class="gridContainer" hidden>
+    <h1 class="gridSpan">Make new game</h1>
+    <label>Name: </label><input id="mgName" type="text" />
+    <label>Max Players(2-12): </label><input id="mgPlayers" type="number"  min="2" max="12"/>
+    <label>Fleet Size(100-1000000): </label><input id="mgFleet" type="number"  min="100" max="1000000"/>
+    <label>Ship Points(0-400): </label><input id="mgPoints" type="number"  min="0" max="400"/>
+    <button onclick="makeGame();">Create Game</button>
 </div>
-<div id="lobby">
-    <h1>Lobby</h1>
+<div id="lobby" class="gridContainer">
+    <h1 class="gridSpan" id="glName"></h1>
+    <p id="glPlayers"></p>
+    <p id="glOwner"></p>
+    <p id="glFleetSize"></p>
+    <p class="gridSpan" id="glFleetPoints"></p>
+    <label id="glAttackL"></label><input id="glAttack" type="number" oninput='setStat("Attack");' min="0" max="400"/>
+    <label id="glDefenseL"></label><input id="glDefense" type="number" oninput='setStat("Defense");' min="0" max="400"/>
+    <label id="glSpeedL"></label><input id="glSpeed" type="number" oninput='setStat("Speed");' min="0" max="400"/>
+    <label id="glScoutL"></label><input id="glScout" type="number" oninput='setStat("Scout");' min="0" max="400"/>
+    <button id="glReady" onclick="playerReady();">Ready</button>
 </div>
-<div id="game">
+<div id="game" hidden>
     <h1>Game</h1>
 </div>
 <script>start();</script>

@@ -1,16 +1,31 @@
-.row{
+#content{
     clear: both;
     margin: 5px;
 }
-
+label, input{
+    width: 100%;
+}
 
 @media only screen and (min-width: 640px) and (-webkit-max-device-pixel-ratio: 1.5) {
-    #content{
-        display: grid;
-        grid-gap: 10px;
-        grid-auto-rows: minmax(100px, auto);
+    label, input{
+        width: auto;
     }
-    .center{
-        grid-column:  2 / 4
+    .gridContainer{
+        display: grid;
+        width: 600px;
+        left: 25%;
+        grid-template-columns: 1fr 1fr 1fr;
+    }
+    .gridContainer > label{
+        text-align: right;
+        grid-column: 1;
+    }
+    .gridContainer > input{
+        text-align: left;
+        grid-column: 2;
+    }
+    .gridSpan{
+        text-align: center;
+        grid-column: 1/-1;
     }
 }

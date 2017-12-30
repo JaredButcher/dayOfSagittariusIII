@@ -1,4 +1,4 @@
-var field = {
+const field = {
     action: "0",
     session: "1",
     servers: "2" ,
@@ -10,7 +10,7 @@ var field = {
     name: "8",
     transform: "9",
     error: "10"}
-var action = {
+const action = {
     ack: "0",
     error: "1",
     update: "2",
@@ -22,14 +22,14 @@ var action = {
     chat: "8",
     joinTeam: "9",
     command: "10"}
-var error = {
+const error = {
     repeat: "0",
     stop: "1",
     joinFail: "2",
     createFail: "3",
     badRequest: "4",
     badInitalConn: "5"}
-var browser = {
+const browser = {
     id: "0",
     name: "1",
     owner: "2",
@@ -39,12 +39,12 @@ var browser = {
     fleetPoints: "6",
     gameMode: "7",
     teams: "8"}
-var game = {
+const game = {
     browserInfo: "0" ,
     players: "1" ,
     running: "2",
     winner: "3"}
-var player = {
+const player = {
     id: "0",
     name: "1",
     team: "2",
@@ -59,7 +59,7 @@ var player = {
     scout: "11",
     speed: "12",
     isFlagship: "13" }
-var transform = {
+const transform = {
     id: "0",
     position: "1" ,
     rotation: "2" ,
@@ -67,10 +67,10 @@ var transform = {
     hide: "4",
     destory: "5",
     rVelocity: "6" }
-var fleet = {
+const fleet = {
     size: "0",
     transform: "1" }
-var weapon = {
+const weapon = {
     lazer: "0",
     missle: "1",
     rail: "2",
@@ -79,48 +79,72 @@ var weapon = {
     plazma: "5",
     emc: "6",
     jump: "7" }
-var chatContext = {
+const chatContext = {
     browser: "0",
     game: "1",
     team: "2" }
-var command = {
+const command = {
     destination: "0",
     fire: "1",
     target: "2" ,
     split: "3",
     merge: "4"}
 
-var scenes = {
+const scenes = {
     start: 0,
     makeGame: 1,
     servers: 2,
     lobby: 3,
     game: 4
 };
-var currentScene;
 
-function scene(current){
+var currentScene;
+var user = {
+    name: "",
+    points: 0,
+    attack: 0,
+    defense: 0,
+    speed: 0,
+    scout: 0,
+    fleets: [],
+};
+var gameInfo = {
+    id: "",
+    name: "",
+    owner: "",
+    pointsMax: 0,
+    playerCount: 0,
+    maxPlayers: 0,
+    fleetSize: 0
+};
+
+function scene(current){ //Changes Scene
     document.getElementById("start").hidden = true;
-    document.getElementById("makeGame").hidden = true;
+    document.getElementById("makeGame").style.display = "none";
     document.getElementById("servers").hidden = true;
-    document.getElementById("lobby").hidden = true;
+    document.getElementById("lobby").style.display = "none";
     document.getElementById("game").hidden = true;
     switch(current){
         case scenes.start:
         document.getElementById("start").hidden = false;
-        var buttons = document.getElementsByClassName("startNav");
+        var buttons = document.getElementsByClassName("startNav"); //CSS display overides the html hidden attribute
         for(var i = 0; i < buttons.length; ++i){
             buttons[i].disabled = true;
         }
         break;
         case scenes.makeGame:
-            document.getElementById("makeGame").hidden = false;
+            document.getElementById("makeGame").style.display = "grid";
+            document.getElementById("mgName").value = user.name + "`s game";
+            document.getElementById("mgPlayers").value = 6;
+            document.getElementById("mgFleet").value = 10000;
+            document.getElementById("mgPoints").value = 200;
         break;
         case scenes.servers:
             document.getElementById("servers").hidden = false;
+            serverBrowser();
         break;
         case scenes.lobby:
-            document.getElementById("lobby").hidden = false;
+            document.getElementById("lobby").style.display = "grid";
         break;
         case scenes.game:
             document.getElementById("game").hidden = false;
@@ -133,6 +157,7 @@ var Conn = new WebSocket("ws://" + window.location.hostname + ":8001/sagittarius
 
 Conn.onopen = function (event) {
     var res = {};
+    //Send cookie or wait to receive one
     res[field.action] = action.init;
     res[field.session] = getCookie("session");
     if(res[field.session] != ""){
@@ -141,7 +166,7 @@ Conn.onopen = function (event) {
         browser.cookies.onChanged.addListener(getCookieEvent);
     }
 };
-Conn.onmessage = function (message) {
+Conn.onmessage = function (message) { //Receive and direct or process all socket messages
     console.log(message.data);
     try{
         var data = JSON.parse(message.data);
@@ -158,31 +183,59 @@ Conn.onmessage = function (message) {
             case action.init:
             break;
             case action.join:
+                var info = data[field.game][game.browserInfo];
+                console.log(info);
+                gameInfo.id = info[browser.id];
+                gameInfo.name = info[browser.name];
+                gameInfo.owner = info[browser.owner];
+                gameInfo.maxPlayers = info[browser.maxPlayers];
+                gameInfo.fleetSize = info[browser.fleetSize];
+                gameInfo.pointsMax = info[browser.fleetPoints];
+                gameInfo.playerCount = (info[browser.players] == []) ? 0 : info[browser.players].length;
+                document.getElementById("glName").innerText = gameInfo.name;
+                document.getElementById("glOwner").innerText = "Owner: " + gameInfo.owner;
+                document.getElementById("glPlayers").innerText = "Players: " + gameInfo.playerCount + "/" + gameInfo.maxPlayers;
+                document.getElementById("glFleetSize").innerText = "Fleet Size: " + gameInfo.fleetSize;
+                document.getElementById("glAttack").value = 0;
+                document.getElementById("glDefense").value = 0;
+                document.getElementById("glSpeed").value = 0;
+                document.getElementById("glScout").value = 0;
+                setStat("Attack");
+                setStat("Defense");
+                setStat("Speed");
+                setStat("Scout");
+                scene(scenes.lobby);
             break;
             case action.joinTeam:
             break;
             case action.makeGame:
             break;
             case action.name:
-                if(currentScene == scenes.start){
-                    if(data[field.error] == error.createFail){
-                        document.getElementById("userNameError").setAttribute("style", "visability: visable")
-                        var buttons = document.getElementsByClassName("startNav");
-                        for(var i = 0; i < buttons.length; ++i){
-                            buttons[i].disabled = true;
-                        }
-                    } else {
-                        document.getElementById("userNameError").setAttribute("style", "visability: hidden");
-                        var buttons = document.getElementsByClassName("startNav");
-                        for(var i = 0; i < buttons.length; ++i){
-                            buttons[i].disabled = false;
-                        }
-                    }
+                document.getElementById("userNameError").hidden = true;
+                var buttons = document.getElementsByClassName("startNav");
+                for(var i = 0; i < buttons.length; ++i){
+                    buttons[i].disabled = false;
                 }
+                user.name = data[field.name];
+                document.getElementById("userName").value = user.name;
             break;
             case action.servers:
+                var serversS = "";
+                if(data[field.servers] == null){
+                    serversS = "<div><h2>No games avaliable<h2></div>";
+                } else {
+                    for(var i = 0; i < data[field.servers].length; ++i){
+                        serversS += "<div>" + i + "</div>";
+                    }
+                }
+                document.getElementById("serverList").innerHTML = serversS;
             break;
             case action.update:
+                if (currentScene = scenes.game){
+
+                } else {
+
+                }
             break;
         }
     } catch(e){
@@ -193,7 +246,7 @@ function Send(reqObj) {
     console.log("Sending: " + JSON.stringify(reqObj));
     Conn.send(JSON.stringify(reqObj));
 }
-function getCookieEvent(callback){
+function getCookieEvent(callback){ //Run when the session cookie is set
     if(!callback.changeInfo.removed && callback.changeInfo.cookie.name == "session"){
         var res = {};
         res[field.action] = action.init;
@@ -213,6 +266,7 @@ function getCookie(cook){
     }
     return "";
 }
+//BUTTONS -----------------------------------------------------------------------------------------------------------
 function setName(){
     var name = document.getElementById("userName").value;
     var sendObj = {};
@@ -220,6 +274,42 @@ function setName(){
     sendObj[field.name] = name;
     Send(sendObj);
 }
+function serverBrowser(){
+    var sendObj = {};
+    sendObj[field.action] = action.servers;
+    Send(sendObj);
+}
+function makeGame(){
+    var sendObj = {};
+    sendObj[field.action] = action.makeGame;
+    var browObj = {};
+    browObj[browser.name] = document.getElementById("mgName").value;
+    browObj[browser.maxPlayers] = document.getElementById("mgPlayers").value;
+    browObj[browser.fleetSize] = document.getElementById("mgFleet").value;
+    browObj[browser.fleetPoints] = document.getElementById("mgPoints").value;
+    var gameObj = {};
+    gameObj[game.browserInfo] = browObj;
+    sendObj[field.game] = gameObj;
+    Send(sendObj);
+}
+function computePoints(){
+    user.attack = parseInt(document.getElementById("glAttack").value);
+    user.defense = parseInt(document.getElementById("glDefense").value);
+    user.speed = parseInt(document.getElementById("glSpeed").value);
+    user.scout = parseInt(document.getElementById("glScout").value);
+    user.points = user.attack + user.defense + user.speed + user.scout;
+    document.getElementById("glFleetPoints").innerText = "Points: " + user.points + "/" + gameInfo.pointsMax;
+}
+function setStat(stat){
+    computePoints();
+    if(user.points > gameInfo.pointsMax){
+        document.getElementById("gl" + stat).value = parseInt(document.getElementById("gl" + stat).value) + gameInfo.pointsMax - user.points;
+        computePoints();
+    }
+    document.getElementById("gl" + stat + "L").innerText = stat + "(" + user[stat.toLowerCase()] + "/" + gameInfo.pointsMax + ")";
+    document.getElementById("gl" + stat).setAttribute("max", (gameInfo.pointsMax - user.points));
+}
+//GAME ----------------------------------------------------------------------------------------------------------------
 var delta = 0;
 var lastFrameTime = 0;
 var MAX_FRAMERATE = 30; //TODO: find a reasonable number for this, 60 is goal
