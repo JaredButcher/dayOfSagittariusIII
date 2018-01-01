@@ -1,5 +1,6 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from http import cookies
+from socketserver import ThreadingMixIn
 import dataManagement
 import time
 import math
@@ -11,7 +12,7 @@ def start(port, data):
     global dataStor
     dataStor = data
     serverAddress = ('', port)
-    httpd = HTTPServer(serverAddress, HTTPHandler)
+    httpd = HTTPServerThread(serverAddress, HTTPHandler)
     httpd.serve_forever()
 
 def timeF(lable):
@@ -52,6 +53,7 @@ class HTTPHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         #self.totalTime = 0
         #timeCalibrate()
+        print("Request Received: " + self.client_address[0])
         self.statusCode = 200
         self.mime = "text/html"
         body = bytes(self.route(), "utf8")
@@ -62,6 +64,8 @@ class HTTPHandler(BaseHTTPRequestHandler):
         #self.totalTime += timeF("Cookies")
         self.end_headers()
         self.wfile.write(body)
+        print("Response Sent: " + self.client_address[0])
+
         #self.totalTime += timeF("Write")
         #print("Total: " + str(self.totalTime))
         #print()
@@ -142,3 +146,5 @@ class HTTPHandler(BaseHTTPRequestHandler):
                 fLayout = fLayout.format(title = pTitle, content = pContent)
                 return fLayout
             
+class HTTPServerThread(ThreadingMixIn, HTTPServer):
+    '''Use this to handle concurent connections for now'''
