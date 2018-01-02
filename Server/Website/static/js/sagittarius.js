@@ -224,8 +224,12 @@ Conn.onmessage = function (message) { //Receive and direct or process all socket
                 if(data[field.servers] == null){
                     serversS = "<div><h2>No games avaliable<h2></div>";
                 } else {
+                    var info = {}
                     for(var i = 0; i < data[field.servers].length; ++i){
-                        serversS += "<div>" + i + "</div>";
+                        info = data[field.servers][i][game.browserInfo];
+                        serversS += '<div class="serverInfo"><p>ID: ' + info[browser.id] + "</p><p>Name: " + info[browser.name] + "</p><p>Owner: " + info[browser.owner]
+                            + "</p><p>Fleet Size: " + info[browser.fleetSize] + "</p><p>Points: " + info[browser.fleetPoints]
+                            + "</p><p>Players: " + (info[browser.players].length || 0) + "/" + info[browser.maxPlayers] + "</p></div>";
                     }
                 }
                 document.getElementById("serverList").innerHTML = serversS;

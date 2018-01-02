@@ -42,17 +42,20 @@ class data:
         info = []
         for game in self.sagGames:
             info.append({sockServer.game.browserInfo.value: game.getInfo()})
+        return info
 
     def getNewId(self):
-        self.idCounter += 1
-        return self.idCounter
+        with self.lock:
+            self.idCounter += 1
+            return self.idCounter
 
     def setUserName(self, user, name):
         name = name[:20]
-        for x in self.users:
-            if x.getName() == name: return None
-        user.setName(name)
-        return name
+        with self.lock:
+            for x in self.users:
+                if x.getName() == name: return None
+            user.setName(name)
+            return name
 
 class user:
     def __init__(self, session=None, sock=None):

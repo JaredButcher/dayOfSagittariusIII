@@ -77,6 +77,7 @@ class client:
                             self.sendError(error.createFail.value)
                     #SERVER BROWSER-------------------------------------------------------------
                     elif message[field.action.value] == action.servers.value:
+                        print("Server Browser")
                         res[field.action.value] = action.servers.value
                         res[field.servers.value] = dataStor.getSagInfo()
                         self.send(res)

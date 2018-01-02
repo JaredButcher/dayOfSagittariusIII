@@ -28,4 +28,12 @@ label, input{
         text-align: center;
         grid-column: 1/-1;
     }
+    .serverInfo{
+        display: grid;
+        width: 600px;
+        background-color: lightgray;
+        border-radius: 5px;
+        border: 2px solid black; 
+        grid-template-columns: 1fr 1fr 1fr;
+    }
 }
