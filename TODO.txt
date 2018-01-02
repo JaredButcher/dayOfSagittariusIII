@@ -1,0 +1,6 @@
+Update browser
+Join game
+leave game
+auto destory game
+change settings
+goto page in game
