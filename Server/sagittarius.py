@@ -8,7 +8,8 @@ sign = lambda x: x and (1, -1)[x < 0]
 
 class sagGame:
     UPDATE_RATE = 30 #Game updates per second, goal 30 min 10
-    def __init__(self, id, owner, name, size, ships, points, teams = 2, mode = 1):
+    def __init__(self, data, id, owner, name, size, ships, points, teams = 2, mode = 1):
+        self.dataStor = data
         self.players = []
         self.transforms = []
         self.id = id
@@ -30,12 +31,38 @@ class sagGame:
     def recCommand(self, command):
         pass
     def addPlayer(self, player):
+        if len(self.players) >= self.maxPlayers: return False
         player.setGame(self, self.getNewId())
         self.players.append(player)
+        return True
     def addUser(self, user):
-        self.addPlayer(player(user, self.teams[0], self.fleetSize))
-    def rmPlayer(self, player):
-        self.players.remove(player)
+        return self.addPlayer(player(user, self.teams[0], self.fleetSize))
+    def userLeft(self, user):
+        if not self.running: #Remove player if game hasn't started, but keep if it has
+            for player in self.players:
+                if player.user == user:
+                    player.user.game = None
+                    self.players.remove(player)
+                    try: player.team.players.remove(player)
+                    except ValueError: pass
+                    for team in self.teams:
+                        if team != player.team:
+                            for spot in team.spotedEnemies:
+                                if spot.player == player:
+                                    spot.remove(player)
+                                    break
+                    break
+        alive = False
+        for player in self.players:
+            if player.user.getSock() != None: 
+                alive = True
+                break
+        if not alive: self.destory()
+    def destory(self):
+        self.dataStor.sagGames.remove(self)
+        self.running = False
+        for player in self.players:
+            player.user.game = None
     def addTransform(self, transform):
         self.transforms.append(transform)
     def rmTransform(self, transform):
@@ -98,6 +125,7 @@ class player:
         self.ships = ships
         self.team = team
     def setGame(self, game, id):
+        self.user.game = game
         self.game = game
         self.id = id
     def send(self, message):

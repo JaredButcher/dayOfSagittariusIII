@@ -7,8 +7,6 @@ from enum import Enum, unique
         
 dataStor = None
 
-#TODO Userfy this class
-
 def start(port, data):
     global dataStor
     dataStor = data
@@ -40,7 +38,6 @@ class client:
             try:
                 data = await self.conn.recv()
             except websockets.exceptions.ConnectionClosed as e:
-                print(e)
                 self.destory()
                 break
             #Start processing and consturcting response
@@ -55,10 +52,10 @@ class client:
                         if message[field.action.value] == action.init.value:
                             if field.session.value in message:
                                 user = dataStor.getUser(message[field.session.value])
-                                print(user)
-                                if(user != None):
+                                if user != None:
                                     user.setSock(self)
                                     self.user = user
+                                    self.user.rmGame()
                                     if not self.user.getName() is None:
                                         res[field.action.value] = action.name.value;
                                         res[field.name.value] = self.user.getName()
@@ -76,11 +73,13 @@ class client:
                     #SERVER BROWSER-------------------------------------------------------------
                     elif message[field.action.value] == action.servers.value:
                         print("Server Browser")
+                        self.user.rmGame()
                         res[field.action.value] = action.servers.value
                         res[field.servers.value] = dataStor.getSagInfo()
                         self.send(res)
                     #MAKE GAME--------------------------------------------------------------------
                     elif message[field.action.value] == action.makeGame.value:
+                        self.user.rmGame()
                         gameB = message[field.game.value]
                         sagGame = dataStor.makeSagGame(self.user, gameB[game.name.value], int(gameB[game.maxPlayers.value]),
                         int(gameB[game.fleetSize.value]), int(gameB[game.fleetPoints.value]))
@@ -93,11 +92,11 @@ class client:
                             self.send(res)
                     #JOIN GAME---------------------------------------------------------------------
                     elif message[field.action.value] == action.join.value:
+                        self.user.rmGame()
                         sagGame = dataStor.getSagGame(message[field.game.value][game.id.value])
-                        if sagGame is None:
+                        if sagGame is None or not sagGame.addUser(self.user):
                             self.sendError(error.joinFail.value)
                         else:
-                            sagGame.addUser(self.user)
                             res[field.action.value] = action.join.value
                             res[field.game.value] = sagGame.getInfo()
                             self.send(res)
@@ -130,6 +129,7 @@ class client:
     def destory(self):
         self.alive = False
         if self.user:
+            self.user.rmGame()
             self.user.setSock(None)
 
 @unique
