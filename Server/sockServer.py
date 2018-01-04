@@ -21,7 +21,6 @@ def start(port, data):
     server.close()
     loop.run_until_complete(server.wait_closed())
     loop.close()
-    
 async def handle_conn(conn, Uri):
     print("URI: " + Uri)
     user = client(conn)
@@ -35,7 +34,6 @@ class client:
         self.user = None
         self.receiveDele = []
         self.error = False
-
     async def beginReceiveLoop(self):
         while self.alive:
             global dataStor;
@@ -83,15 +81,27 @@ class client:
                         self.send(res)
                     #MAKE GAME--------------------------------------------------------------------
                     elif message[field.action.value] == action.makeGame.value:
-                        gameB = message[field.game.value][game.browserInfo.value]
-                        sagGame = dataStor.makeSagGame(self.user, gameB[browser.name.value], int(gameB[browser.maxPlayers.value]),
-                        int(gameB[browser.fleetSize.value]), int(gameB[browser.fleetPoints.value]))
+                        gameB = message[field.game.value]
+                        sagGame = dataStor.makeSagGame(self.user, gameB[game.name.value], int(gameB[game.maxPlayers.value]),
+                        int(gameB[game.fleetSize.value]), int(gameB[game.fleetPoints.value]))
                         if sagGame is None:
                             self.sendError(error.createFail.value)
                         else:
+                            sagGame.addUser(self.user)
                             res[field.action.value] = action.join.value
-                            res[field.game.value] = {game.browserInfo.value: sagGame.getInfo()}
+                            res[field.game.value] = sagGame.getInfo()
                             self.send(res)
+                    #JOIN GAME---------------------------------------------------------------------
+                    elif message[field.action.value] == action.join.value:
+                        sagGame = dataStor.getSagGame(message[field.game.value][game.id.value])
+                        if sagGame is None:
+                            self.sendError(error.joinFail.value)
+                        else:
+                            sagGame.addUser(self.user)
+                            res[field.action.value] = action.join.value
+                            res[field.game.value] = sagGame.getInfo()
+                            self.send(res)
+                            
             except json.JSONDecodeError as e:
                 print(e.msg)
                 self.sendError(error.badRequest)
@@ -108,10 +118,8 @@ class client:
         if self.errorCount > 5:
             res[field.error.value] = error.stop.value
         self.send(res)
-
     def send(self, data):
         asyncio.get_event_loop().create_task(self._sendHelper(json.dumps(data)))
-
     async def _sendHelper(self, data):
         try:
             print("SendHelp: " + str(data))
@@ -119,7 +127,6 @@ class client:
         except websockets.exceptions.ConnectionClosed as e:
             print(e)
             self.destory()
-    
     def destory(self):
         self.alive = False
         if self.user:
@@ -160,22 +167,18 @@ class error(Enum):
     badRequest = "4"
     badInitalConn = "5"
 @unique
-class browser(Enum):
-    id = "0"
-    name = "1"
-    owner = "2"
-    players = "3"
-    maxPlayers = "4"
-    fleetSize = "5"
-    fleetPoints = "6"
-    gameMode = "7"
-    teams = "8"
-@unique
 class game(Enum):
-    browserInfo = "0" #browser
+    id = "0"
     players = "1" #[player]
     running = "2"
     winner = "3"
+    name = "4"
+    owner = "5"
+    maxPlayers = "6"
+    fleetSize = "7"
+    fleetPoints = "8"
+    gameMode = "9"
+    teams = "10"
 @unique
 class player(Enum):
     id = "0"
@@ -192,6 +195,7 @@ class player(Enum):
     scout = "11"
     speed = "12"
     isFlagship = "13"
+    ships = "14"
 @unique
 class transform(Enum):
     id = "0"

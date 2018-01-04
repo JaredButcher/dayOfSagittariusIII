@@ -41,8 +41,12 @@ class data:
     def getSagInfo(self):
         info = []
         for game in self.sagGames:
-            info.append({sockServer.game.browserInfo.value: game.getInfo()})
+            info.append(game.getInfo(True))
         return info
+    def getSagGame(self, id):
+        for game in self.sagGames:
+            if game.id == id: return game
+        return None
 
     def getNewId(self):
         with self.lock:
