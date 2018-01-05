@@ -34,31 +34,35 @@ class sagGame:
         if len(self.players) >= self.maxPlayers: return False
         player.setGame(self, self.getNewId())
         self.players.append(player)
+        self.update()
         return True
     def addUser(self, user):
         return self.addPlayer(player(user, self.teams[0], self.fleetSize))
     def userLeft(self, user):
+        print("userLeft")
         if not self.running: #Remove player if game hasn't started, but keep if it has
-            for player in self.players:
-                if player.user == user:
-                    player.user.game = None
-                    self.players.remove(player)
-                    try: player.team.players.remove(player)
-                    except ValueError: pass
-                    for team in self.teams:
-                        if team != player.team:
-                            for spot in team.spotedEnemies:
-                                if spot.player == player:
-                                    spot.remove(player)
-                                    break
-                    break
+            player = self.findPlayer(user)
+            if player != None:
+                player.user.game = None
+                self.players.remove(player)
+                if user == self.owner and len(self.players) > 0:
+                    self.owner = self.players[0]
+                try: player.team.players.remove(player)
+                except ValueError: pass
+                for team in self.teams:
+                    if team != player.team:
+                        for spot in team.spotedEnemies:
+                            if spot.player == player:
+                                spot.remove(player)
+                                break
         alive = False
         for player in self.players:
             if player.user.getSock() != None: 
                 alive = True
                 break
         if not alive: self.destory()
-    def destory(self):
+        else: self.update()
+    def destory(self):  
         self.dataStor.sagGames.remove(self)
         self.running = False
         for player in self.players:
@@ -90,6 +94,43 @@ class sagGame:
             else:
                 info[sockServer.game.players.value].append(player.getInfo())
         return info
+    def update(self):
+        info = {}
+        info[sockServer.field.action.value] = sockServer.action.update.value
+        info[sockServer.field.game.value] = self.getInfo(True)
+        for player in self.players:
+            player.send(info)
+    def recUpdate(self, user, info):
+        try:
+            if user == self.owner:
+                if sockServer.game.name.value in info: self.name = info[sockServer.game.name.value]
+                if sockServer.game.maxPlayers.value in info: self.maxPlayers = int(info[sockServer.game.maxPlayers.value])
+                if sockServer.game.fleetSize.value in info: self.fleetSize = int(info[sockServer.game.fleetSize.value])
+                if sockServer.game.fleetPoints.value in info: self.fleetPoints = int(info[sockServer.game.fleetPoints.value])
+                if sockServer.game.gameMode.value in info: self.gameMode = info[sockServer.game.gameMode.value]
+                if sockServer.game.teams.value in info: 
+                    self.teams = []
+                    for i in range(0, int(info[sockServer.game.teams.value])): self.teams.append(team(i))
+            info = info[sockServer.game.players.value][0]
+            player = self.findPlayer(user)
+            if sockServer.player.team.value in info:
+                player.team = int(info[sockServer.player.team.value])
+                self.teams[player.team].players.append(player)
+            if sockServer.player.attack.value in info: player.attack = int(info[sockServer.player.attack.value])
+            if sockServer.player.defense.value in info: player.defense = int(info[sockServer.player.defense.value])
+            if sockServer.player.speed.value in info: player.speed = int(info[sockServer.player.speed.value])
+            if sockServer.player.scout.value in info: player.scout = int(info[sockServer.player.scout.value])
+            if sockServer.player.primary.value in info: player.primary = info[sockServer.player.primary.value]
+            if sockServer.player.secondary.value in info: player.secondary = info[sockServer.player.secondary.value]
+            self.update()
+            return True
+        except (TypeError, ValueError, AttributeError) as e:
+            return False
+            print(e)
+    def findPlayer(self, user):
+        for player in self.players:
+                if player.user == user: return player
+        return None
     def loop(self):
         timeP = time.perf_counter() 
         while self.running:

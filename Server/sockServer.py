@@ -81,8 +81,11 @@ class client:
                     elif message[field.action.value] == action.makeGame.value:
                         self.user.rmGame()
                         gameB = message[field.game.value]
-                        sagGame = dataStor.makeSagGame(self.user, gameB[game.name.value], int(gameB[game.maxPlayers.value]),
-                        int(gameB[game.fleetSize.value]), int(gameB[game.fleetPoints.value]))
+                        try:
+                            sagGame = dataStor.makeSagGame(self.user, gameB[game.name.value], int(gameB[game.maxPlayers.value]),
+                            int(gameB[game.fleetSize.value]), int(gameB[game.fleetPoints.value]))
+                        except ValueError:
+                            sagGame = None
                         if sagGame is None:
                             self.sendError(error.createFail.value)
                         else:
@@ -100,6 +103,10 @@ class client:
                             res[field.action.value] = action.join.value
                             res[field.game.value] = sagGame.getInfo()
                             self.send(res)
+                    #UPDATE--------------------------------------------------------------------------
+                    elif message[field.action.value] == action.update.value:
+                        if not self.user.game.recUpdate(self, message[field.game.value]):
+                            self.sendError(error.badRequest.value)
                             
             except json.JSONDecodeError as e:
                 print(e.msg)

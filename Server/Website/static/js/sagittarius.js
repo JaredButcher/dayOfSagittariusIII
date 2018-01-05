@@ -180,8 +180,8 @@ Conn.onmessage = function (message) { //Receive and direct or process all socket
             case action.init:
             break;
             case action.join:
+                console.log("Join");
                 var info = data[field.game];
-                console.log(info);
                 gameInfo.id = info[game.id];
                 gameInfo.name = info[game.name];
                 gameInfo.owner = info[game.owner];
@@ -232,10 +232,24 @@ Conn.onmessage = function (message) { //Receive and direct or process all socket
                 document.getElementById("serverList").innerHTML = serversS;
             break;
             case action.update:
-                if (currentScene = scenes.game){
+                if (currentScene == scenes.game){
 
-                } else {
-
+                } else if (currentScene == scenes.lobby) {
+                    var info = data[field.game];
+                    gameInfo.name = info[game.name];
+                    gameInfo.owner = info[game.owner];
+                    gameInfo.maxPlayers = info[game.maxPlayers];
+                    gameInfo.fleetSize = info[game.fleetSize];
+                    gameInfo.pointsMax = info[game.fleetPoints];
+                    gameInfo.playerCount = (info[game.players] == []) ? 0 : info[game.players].length;
+                    document.getElementById("glName").innerText = gameInfo.name;
+                    document.getElementById("glOwner").innerText = "Owner: " + gameInfo.owner;
+                    document.getElementById("glPlayers").innerText = "Players: " + gameInfo.playerCount + "/" + gameInfo.maxPlayers;
+                    document.getElementById("glFleetSize").innerText = "Fleet Size: " + gameInfo.fleetSize;
+                    setStat("Attack");
+                    setStat("Defense");
+                    setStat("Speed");
+                    setStat("Scout");
                 }
             break;
         }
@@ -281,6 +295,7 @@ function serverBrowser(){
     Send(sendObj);
 }
 function makeGame(){
+    console.log("Make Game");
     var sendObj = {};
     sendObj[field.action] = action.makeGame;
     var gameObj = {};
@@ -309,6 +324,17 @@ function setStat(stat){
         document.getElementById("gl" + stat).value = parseInt(document.getElementById("gl" + stat).value) + gameInfo.pointsMax - user.points;
         computePoints();
     }
+    var playerInfo = {};
+    playerInfo[player.attack] = user.attack;
+    playerInfo[player.defense] = user.defense;
+    playerInfo[player.speed] = user.speed;
+    playerInfo[player.scout] = user.scout;
+    var gInfo = {};
+    gInfo[game.players] = [playerInfo];
+    var info = {};
+    info[field.action] = action.update;
+    info[field.game] = gInfo;
+    Send(info)
 }
 function join(gameId){
     var obj = {};
