@@ -1,17 +1,13 @@
 const field = {
     action: "0",
     session: "1",
-    servers: "2" ,
-    gameId: "3",
-    game: "4" ,
-    chatContext: "5",
-    chatMessage: "6",
-    team: "7",
-    name: "8",
-    transform: "9",
-    error: "10"}
+    servers: "2", //[browser]
+    game: "3", //game
+    chatContext: "4",
+    chatMessage: "5",
+    name: "6",
+    error: "7"};
 const action = {
-    ack: "0",
     error: "1",
     update: "2",
     init: "3",
@@ -20,54 +16,53 @@ const action = {
     name: "6",
     makeGame: "7",
     chat: "8",
-    joinTeam: "9",
-    command: "10"}
+    command: "9"};
 const error = {
     repeat: "0",
     stop: "1",
-    joinFail: "2",
-    createFail: "3",
-    badRequest: "4",
-    badInitalConn: "5"}
+    badRequest: "2",
+    joinFail: "3",
+    createFail: "4",
+    badInit: "5",
+    forbidden: "6"};
 const game = {
     id: "0",
-    players: "1" ,
+    players: "1", //[player]
     running: "2",
-    winner: "3", 
+    winner: "3",
     name: "4",
     owner: "5",
     maxPlayers: "6",
-    fleetSize: "7",
-    fleetPoints: "8",
-    gameMode: "9",
-    teams: "10"}
+    shipSize: "7",
+    shipPoints: "8",
+    mode: "9",
+    teams: "10"};
 const player = {
     id: "0",
     name: "1",
     team: "2",
-    fleets: "3" ,
-    scouts: "4" ,
-    primary: "5" ,
+    fleets: "3", //[fleet]
+    scouts: "4", //[transform]
+    primary: "5", //weapon
     primaryAmmo: "6",
-    secondary: "7" ,
+    secondary: "7", //weapon
     secondaryAmmo: "8",
     attack: "9",
     defense: "10",
     scout: "11",
     speed: "12",
     isFlagship: "13",
-    ships: "14" }
+    ships: "14"};
 const transform = {
     id: "0",
-    position: "1" ,
-    rotation: "2" ,
-    velocity: "3" ,
+    position: "1", //{x,y}
+    rotation: "2", 
+    target: "3", //{x,y}
     hide: "4",
-    destory: "5",
-    rVelocity: "6" }
+    destory: "5"}
 const fleet = {
     size: "0",
-    transform: "1" }
+    transform: "1"};
 const weapon = {
     lazer: "0",
     missle: "1",
@@ -76,25 +71,26 @@ const weapon = {
     fighter: "4",
     plazma: "5",
     emc: "6",
-    jump: "7" }
+    jump: "7",
+    point: "8"};
 const chatContext = {
-    browser: "0",
+    free: "0",
     game: "1",
-    team: "2" }
+    team: "2"};
 const command = {
-    destination: "0",
-    fire: "1",
-    target: "2" ,
-    split: "3",
-    merge: "4"}
+    source: "0", //transform
+    fire: "1",  //ammo used if applicatble
+    target: "2", //transform
+    split: "3", //Size of new fleet
+    merge: "4"};
 
 const scenes = {
     start: 0,
     makeGame: 1,
     servers: 2,
     lobby: 3,
-    game: 4
-};
+    game: 4};
+
 
 var currentScene;
 var user = {
@@ -104,8 +100,7 @@ var user = {
     defense: 0,
     speed: 0,
     scout: 0,
-    fleets: [],
-};
+    fleets: []};
 var gameInfo = {
     id: "",
     name: "",
@@ -113,8 +108,7 @@ var gameInfo = {
     pointsMax: 0,
     playerCount: 0,
     maxPlayers: 0,
-    fleetSize: 0
-};
+    fleetSize: 0};
 
 function scene(current){ //Changes Scene
     document.getElementById("start").hidden = true;

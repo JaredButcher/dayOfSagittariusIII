@@ -61,7 +61,7 @@ class client:
                                         res[field.name.value] = self.user.getName()
                                         self.send(res)
                         if self.user is None:
-                            self.sendError(error.badInitalConn.value)
+                            self.sendError(error.badInit.value)
                     #SET NAME-------------------------------------------------------------------
                     elif message[field.action.value] == action.name.value:
                         if dataStor.setUserName(self.user, message[field.name.value]):
@@ -72,7 +72,6 @@ class client:
                             self.sendError(error.createFail.value)
                     #SERVER BROWSER-------------------------------------------------------------
                     elif message[field.action.value] == action.servers.value:
-                        print("Server Browser")
                         self.user.rmGame()
                         res[field.action.value] = action.servers.value
                         res[field.servers.value] = dataStor.getSagInfo()
@@ -83,7 +82,7 @@ class client:
                         gameB = message[field.game.value]
                         try:
                             sagGame = dataStor.makeSagGame(self.user, gameB[game.name.value], int(gameB[game.maxPlayers.value]),
-                            int(gameB[game.fleetSize.value]), int(gameB[game.fleetPoints.value]))
+                            int(gameB[game.shipSize.value]), int(gameB[game.shipPoints.value]))
                         except ValueError:
                             sagGame = None
                         if sagGame is None:
@@ -144,17 +143,13 @@ class field(Enum):
     action = "0"
     session = "1"
     servers = "2" #[browser]
-    gameId = "3"
-    game = "4" #game
-    chatContext = "5"
-    chatMessage = "6"
-    team = "7"
-    name = "8"
-    transform = "9"
-    error = "10"
+    game = "3" #game
+    chatContext = "4"
+    chatMessage = "5"
+    name = "6"
+    error = "7"
 @unique
 class action(Enum):
-    ack = "0"
     error = "1"
     update = "2"
     init = "3"
@@ -163,16 +158,16 @@ class action(Enum):
     name = "6"
     makeGame = "7"
     chat = "8"
-    joinTeam = "9"
-    command = "10"
+    command = "9"
 @unique
 class error(Enum):
     repeat = "0"
     stop = "1"
-    joinFail = "2"
-    createFail = "3"
-    badRequest = "4"
-    badInitalConn = "5"
+    badRequest = "2"
+    joinFail = "3"
+    createFail = "4"
+    badInit = "5"
+    forbidden = "6"
 @unique
 class game(Enum):
     id = "0"
@@ -182,9 +177,9 @@ class game(Enum):
     name = "4"
     owner = "5"
     maxPlayers = "6"
-    fleetSize = "7"
-    fleetPoints = "8"
-    gameMode = "9"
+    shipSize = "7"
+    shipPoints = "8"
+    mode = "9"
     teams = "10"
 @unique
 class player(Enum):
@@ -208,10 +203,9 @@ class transform(Enum):
     id = "0"
     position = "1" #{x,y}
     rotation = "2" 
-    velocity = "3" #{x,y}
+    target = "3" #{x,y}
     hide = "4"
     destory = "5"
-    rVelocity = "6"
 @unique
 class fleet(Enum):
     size = "0"
@@ -226,15 +220,16 @@ class weapon(Enum):
     plazma = "5"
     emc = "6"
     jump = "7"
+    point = "8"
 @unique
 class chatContext(Enum):
-    browser = "0"
+    free = "0"
     game = "1"
     team = "2"
 @unique
 class command(Enum):
-    destination = "0" #transform
-    fire = "1"
+    source = "0" #transform
+    fire = "1"  #ammo used if applicatble
     target = "2" #transform
-    split = "3"
+    split = "3" #Size of new fleet
     merge = "4" #[transform]
