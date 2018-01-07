@@ -3,6 +3,7 @@ import threading
 import math
 import time
 import sockServer
+import html
 
 class gameMap:
     def __init__(self, width, height):
@@ -28,11 +29,12 @@ class sagGame:
         self.shipSize = ships
         self.shipPoints = points
         self.teams = []
-        for i in range(0, teams): self.teams.append(team(i))
+        for i in range(0, min(4, max(2, teams))): self.teams.append(team(i))
         self.mode = mode
         self.winner = None
         self.running = False
         self.idCounter = 0
+        self.bind()
         self.gameLoop = threading.Thread(target=self.loop)
     def start(self):
         self.running = True
@@ -57,7 +59,7 @@ class sagGame:
         if not self.running: #Remove player if game hasn't started, but keep if it has
             player = self.findPlayer(user)
             if player != None:
-                player.destory()           
+                player.destory()
         alive = False
         for player in self.players:
             if player.user.getSock() != None: 
@@ -99,13 +101,13 @@ class sagGame:
                 info[sockServer.game.players.value].append(player.getInfo())
         return info
     def recUpdate(self, user, info):
-        #try: #TODO Verify info FIRST, then set values and send
-            if user == self.owner:
-                sendInfo = False
-                if sockServer.game.name.value in info: 
+        sendInfo = False
+        if user == self.owner:
+            try:
+                if sockServer.game.name.value in info:
                     self.name = info[sockServer.game.name.value]
                     sendInfo = True
-                if sockServer.game.maxPlayers.value in info: 
+                if sockServer.game.maxPlayers.value in info:
                     self.maxPlayers = int(info[sockServer.game.maxPlayers.value])
                     sendInfo = True
                 if sockServer.game.shipSize.value in info:
@@ -120,36 +122,15 @@ class sagGame:
                 if sockServer.game.teams.value in info: 
                     sendInfo = True
                     self.teams = []
-                    for i in range(0, int(info[sockServer.game.teams.value])): self.teams.append(team(i))
-                if sendInfo: self.send(info)
-            info = info[sockServer.game.players.value][0]
-            player = self.findPlayer(user)
-            sendPlayer = False
-            if sockServer.player.team.value in info:
-                player.setTeam(int(info[sockServer.player.team.value]))
-            if sockServer.player.attack.value in info:
-                player.attack = int(info[sockServer.player.attack.value])
-                sendPlayer = True
-            if sockServer.player.defense.value in info:
-                player.defense = int(info[sockServer.player.defense.value])
-                sendPlayer = True
-            if sockServer.player.speed.value in info:
-                player.speed = int(info[sockServer.player.speed.value])
-                sendPlayer = True
-            if sockServer.player.scout.value in info:
-                player.scout = int(info[sockServer.player.scout.value])
-                sendPlayer = True
-            if sockServer.player.primary.value in info:
-                player.primary = info[sockServer.player.primary.value]
-                sendPlayer = True
-            if sockServer.player.secondary.value in info:
-                player.secondary = info[sockServer.player.secondary.value]
-                sendPlayer = True
-            if sendPlayer: player.send(player.getInfo(True))
-            return True
-        #except (TypeError, ValueError, AttributeError) as e:
-            return False
-            print(e)
+                    for i in range(0, min(4, max(2, int(info[sockServer.game.teams.value])))): self.teams.append(team(i))
+            except (TypeError, ValueError):
+                pass
+            if sendInfo: 
+                self.bind()
+                self.send(getInfo(True))
+        info = info[sockServer.game.players.value][0]
+        player = self.findPlayer(user)
+        if player: player.recUpdate(info)
     def findPlayer(self, user):
         for player in self.players:
                 if player.user == user: return player
@@ -169,6 +150,19 @@ class sagGame:
     def send(self, info):
         for player in self.players:
             player.send(info)
+    def bind(self):
+        if self.name is None or self.name == "":
+            self.name = self.owner.getName() + "`s game"
+        self.name = self.name[:30]
+        if self.maxPlayers is None:
+            self.maxPlayers = 6
+        self.maxPlayers = min(12, max(2, self.maxPlayers))
+        if self.shipSize is None:
+            self.shipSize = 10000
+        self.shipSize = min(1000000, max(1, self.shipSize))
+        if self.shipPoints is None:
+            self.shipPoints = 200
+        self.shipPoints = min(400, max(0, self.shipPoints))
 
 class player:
     BASE_SPEED = 10
@@ -195,6 +189,7 @@ class player:
         self.user.game = game
         self.game = game
         self.id = id
+        self.setTeam(self.game.teams[0])
     def send(self, message):
         self.user.getSock().send(message)
     def getUpdate(self, transforms = None):
@@ -299,17 +294,10 @@ class player:
         info[sockServer.field.game.value][sockServer.game.players.value] = [message]
         return info
     def setTeam(self, team):
+        if self.team: self.team.players.remove(self)
         self.team = team
-        self.teams[player.team].players.append(player)
-        player = {}
-        player[sockServer.player.id.value] = self.id
-        player[sockServer.player.team.value] = self.team
-        game = {}
-        game[sockServer.game.players.value] = [player]
-        info = {}
-        info[sockServer.field.game.value] = game
-        info[sockServer.field.action.value] = sockServer.action.update.value
-        self.game.send(info)
+        team.players.append(self)
+        self.game.send(self.updateBase({sockServer.player.team.value: self.team.number}))
     def destory(self):
         self.game.send(self.updateBase({sockServer.player.delete.value: True}))
         self.game.players.remove(self)
@@ -320,6 +308,53 @@ class player:
         for transform in self.fleets + self.scouts:
             transform.destory()
         self.game = None
+    def recUpdate(self, info):
+        send = False
+        try:
+            if self.game.running == False and sockServer.player.team.value in info:
+                teamInt = int(info[sockServer.player.team.value])
+                for team in self.game.teams:
+                    if team.number == teamInt and self.team != team:
+                        self.setTeam(team)
+            if sockServer.player.attack.value in info:
+                player.attack = min(100, int(info[sockServer.player.attack.value]))
+                send = True
+                if self.statCount() > self.game.shipPoints:
+                    self.attack = max(0, self.attack - (self.statCount - self.game.shipPoints))
+            if sockServer.player.defense.value in info:
+                player.defense = min(100, int(info[sockServer.player.defense.value]))
+                send = True
+                if self.statCount() > self.game.shipPoints:
+                    self.defense = max(0, self.defense - (self.statCount - self.game.shipPoints))
+            if sockServer.player.speed.value in info:
+                player.speed = min(100, int(info[sockServer.player.speed.value]))
+                send = True
+                if self.statCount() > self.game.shipPoints:
+                    self.speed = max(0, self.speed - (self.statCount - self.game.shipPoints))
+            if sockServer.player.scout.value in info:
+                player.scout = min(100, int(info[sockServer.player.scout.value]))
+                send = True
+                if self.statCount() > self.game.shipPoints:
+                    self.scout = max(0, self.scout - (self.statCount - self.game.shipPoints))
+            if sockServer.player.primary.value in info:
+                player.primary = info[sockServer.player.primary.value]
+                send = True
+            if sockServer.player.secondary.value in info:
+                player.secondary = info[sockServer.player.secondary.value]
+                send = True
+        except (TypeError, ValueError):
+            pass
+        if send:
+            self.statLimit()
+            self.send(self.getInfo(True))
+    def statCount(self):
+        return self.attack + self.defense + self.speed + self.scout
+    def statLimit(self):
+        if self.statCount() > self.game.shipPoints:
+            self.attack = 0
+            self.defense = 0
+            self.speed = 0
+            self.scout = 0
 
 class transform: #Base class for all gameobjects
     def __init__(self, player, id, position, rotaion, speed, traverse, map):
@@ -391,7 +426,7 @@ class transform: #Base class for all gameobjects
     def computeSpotting(self, transform=None):
         if transform is None:
             for team in player.game.teams:
-                if team != player.setTeam:
+                if team != player.team:
                     for player in team.players:
                         for transform in player.fleets + player.scouts:
                             spot = inSpotingRange(transform)

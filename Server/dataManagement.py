@@ -27,8 +27,6 @@ class data:
         with self.lock:
             self.users.remove(user)
     def makeSagGame(self, owner, name, size, ships, points, teams = 2, mode = 1):
-        name = name[:30]
-        if not (2 <= size <= 12 and 100 <= ships <= 1000000 and 0 <= points <= 400): return None
         with self.lock:
             game = sagGame(self, self.getNewId(), owner, name, size, ships, points, teams, mode)
             self.sagGames.append(game)

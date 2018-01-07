@@ -1,10 +1,11 @@
-import websockets
 import asyncio
-import threading
 import dataManagement
-import json
 from enum import Enum, unique
-        
+import html
+import json
+import threading
+import websockets
+
 dataStor = None
 
 def start(port, data):
@@ -80,8 +81,9 @@ class client:
                     elif message[field.action.value] == action.makeGame.value:
                         self.user.rmGame()
                         gameB = message[field.game.value]
+                        sagGame = None
                         try:
-                            sagGame = dataStor.makeSagGame(self.user, gameB[game.name.value], int(gameB[game.maxPlayers.value]),
+                            sagGame = dataStor.makeSagGame(self.user, gameB[game.name.value][:30], int(gameB[game.maxPlayers.value]),
                             int(gameB[game.shipSize.value]), int(gameB[game.shipPoints.value]))
                         except ValueError:
                             sagGame = None
@@ -104,8 +106,7 @@ class client:
                             self.send(res)
                     #UPDATE--------------------------------------------------------------------------
                     elif message[field.action.value] == action.update.value:
-                        if not self.user.game.recUpdate(self.user, message[field.game.value]):
-                            self.sendError(error.badRequest.value)
+                        self.user.game.recUpdate(self.user, message[field.game.value])
                             
             except json.JSONDecodeError as e:
                 print(e.msg)

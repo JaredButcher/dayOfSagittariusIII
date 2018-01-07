@@ -182,6 +182,7 @@ Conn.onmessage = function (message) { //Receive and direct or process all socket
             break;
             case action.join:
                 console.log("Join");
+                document.getElementById("glPlayerInfo").innerHTML = "";
                 var info = data[field.game];
                 gameInfo.id = info[game.id];
                 gameInfo.name = info[game.name];
@@ -303,9 +304,54 @@ function getCookie(cook){
 class gamePlayer{
     constructor(id){
         this.id = id;
+        this.name = ""
+        this.team = 0
+        this.ready = false
+        this.fleets = []
+        this.scouts = []
+        document.getElementById("glPlayerInfo").innerHTML += '<div class="gridContainer" id="player'+ this.id +'"><p>Name: '+ this.name 
+        +'</p><p>Team: '+ this.team +'</p><p>'+ this.ready +'</p></div>';
     }
     update(info){
-        if(info[player.delete]) this.delete()
+        if(info[player.delete]) this.delete();
+        if(info[player.name]) this.name = info[player.name];
+        if(info[player.team]) this.team = info[player.team];
+        if(info[player.fleets]){
+            for(var i = 0; i < info[player.fleets].length; i++){
+                var unfound = true;
+                for(var j = 0; j < this.fleets.length; j++){
+                    if(this.fleets[j].id == info[player.fleets][i][fleet.transform][transform.id]){
+                        unfound = false;
+                        this.fleets[j].update(info[player.fleets][i]);
+                        break;
+                    }
+                }
+                if(unfound){
+                    var unit = new gameFleet(info[player.fleets][i][fleet.transform][transform.id], this);
+                    unit.update(info[player.fleets][i]);
+                    this.fleets.push(unit);
+                }
+            }
+        }
+        if(info[player.scouts]){
+            for(var i = 0; i < info[player.scouts].length; i++){
+                var unfound = true;
+                for(var j = 0; j < this.scouts.length; j++){
+                    if(this.scouts[j].id == info[player.scouts][i][transform.id]){
+                        unfound = false;
+                        this.scouts[j].update(info[player.scouts][i]);
+                        break;
+                    }
+                }
+                if(unfound){
+                    var unit = new gameTransform(info[player.scouts][i][transform.id], this);
+                    unit.update(info[player.scouts][i]);
+                    this.scouts.push(unit);
+                }
+            }
+        }
+        document.getElementById('player'+ this.id).innerHTML = '<p>Name: '+ this.name 
+        +'</p><p>Team: '+ this.team +'</p><p>'+ this.ready +'</p>';
     }
     get id(){
         return this.id;
@@ -316,6 +362,28 @@ class gamePlayer{
     delete(){
         gameInfo.players.splice(gameInfo.players.indexOf(this), 1);
         document.getElementById("glPlayers").innerText = "Players: " + gameInfo.players.length + "/" + gameInfo.maxPlayers;
+        document.getElementById("player"+ this.id).remove();
+    }
+}
+class gameTransform{
+    constructor(id, player){
+        this.id = id;
+        this.player = player
+    }
+    update(info){
+
+    }
+    delete(){
+
+    }
+}
+class gameFleet extends gameTransform{
+    constructor(id, player){
+        this.id = id;
+        this.player = player
+    }
+    update(info){
+        super.update(info[fleet.transform])
     }
 }
 //BUTTONS -----------------------------------------------------------------------------------------------------------
@@ -344,10 +412,10 @@ function makeGame(){
     Send(sendObj);
 }
 function computePoints(){
-    user.attack = parseInt(document.getElementById("glAttack").value);
-    user.defense = parseInt(document.getElementById("glDefense").value);
-    user.speed = parseInt(document.getElementById("glSpeed").value);
-    user.scout = parseInt(document.getElementById("glScout").value);
+    user.attack = parseInt(document.getElementById("glAttack").value) || 0;
+    user.defense = parseInt(document.getElementById("glDefense").value) || 0;
+    user.speed = parseInt(document.getElementById("glSpeed").value) || 0;
+    user.scout = parseInt(document.getElementById("glScout").value) || 0;
     user.points = user.attack + user.defense + user.speed + user.scout;
     document.getElementById("glFleetPoints").innerText = "Points: " + user.points + "/" + gameInfo.pointsMax;
     document.getElementById("glAttack").setAttribute("max", (Math.min(100, gameInfo.pointsMax - user.points + user.attack)));
@@ -358,7 +426,7 @@ function computePoints(){
 function setStat(stat, sendStats=true){
     computePoints();
     if(user.points > gameInfo.pointsMax){
-        document.getElementById("gl" + stat).value = parseInt(document.getElementById("gl" + stat).value) + gameInfo.pointsMax - user.points;
+        document.getElementById("gl" + stat).value = Math.min(100, parseInt(document.getElementById("gl" + stat).value) + gameInfo.pointsMax - user.points || 0);
         computePoints();
     }
     if(sendStats){
