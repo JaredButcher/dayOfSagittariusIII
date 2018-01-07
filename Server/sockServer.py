@@ -104,7 +104,7 @@ class client:
                             self.send(res)
                     #UPDATE--------------------------------------------------------------------------
                     elif message[field.action.value] == action.update.value:
-                        if not self.user.game.recUpdate(self, message[field.game.value]):
+                        if not self.user.game.recUpdate(self.user, message[field.game.value]):
                             self.sendError(error.badRequest.value)
                             
             except json.JSONDecodeError as e:
@@ -113,21 +113,16 @@ class client:
             if not self.error:
                 self.errorCount = 0
             self.error = False
-
-    def sendError(self, errorCode = 0):
-        self.errorCount += 1
-        self.error = True
+    def sendError(self, errorCode):
         res = {}
         res[field.action.value] = action.error.value
         res[field.error.value] = errorCode
-        if self.errorCount > 5:
-            res[field.error.value] = error.stop.value
         self.send(res)
     def send(self, data):
         asyncio.get_event_loop().create_task(self._sendHelper(json.dumps(data)))
     async def _sendHelper(self, data):
         try:
-            print("SendHelp: " + str(data))
+            print("Send: " + str(data))
             await self.conn.send(data)
         except websockets.exceptions.ConnectionClosed as e:
             print(e)
@@ -181,6 +176,7 @@ class game(Enum):
     shipPoints = "8"
     mode = "9"
     teams = "10"
+    map = "11"
 @unique
 class player(Enum):
     id = "0"
@@ -198,14 +194,18 @@ class player(Enum):
     speed = "12"
     isFlagship = "13"
     ships = "14"
+    delete = "15"
 @unique
 class transform(Enum):
     id = "0"
-    position = "1" #{x,y}
-    rotation = "2" 
-    target = "3" #{x,y}
-    hide = "4"
-    destory = "5"
+    pos = "1" #{x,y}
+    rot = "2" 
+    targetPos = "3" #{x,y}
+    targetRot = "4"
+    posV = "5" #{x,y}
+    rotV = "6" 
+    hide = "7"
+    destory = "8"
 @unique
 class fleet(Enum):
     size = "0"
@@ -233,3 +233,7 @@ class command(Enum):
     target = "2" #transform
     split = "3" #Size of new fleet
     merge = "4" #[transform]
+@unique
+class gameMap(Enum):
+    height = "0"
+    width = "1"

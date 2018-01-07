@@ -36,7 +36,8 @@ const game = {
     shipSize: "7",
     shipPoints: "8",
     mode: "9",
-    teams: "10"};
+    teams: "10",
+    map: "11"};
 const player = {
     id: "0",
     name: "1",
@@ -52,14 +53,18 @@ const player = {
     scout: "11",
     speed: "12",
     isFlagship: "13",
-    ships: "14"};
+    ships: "14",
+    delete: "15"};
 const transform = {
     id: "0",
-    position: "1", //{x,y}
-    rotation: "2", 
-    target: "3", //{x,y}
-    hide: "4",
-    destory: "5"}
+    pos: "1", //{x,y}
+    rot: "2", 
+    targetPos: "3", //{x,y}
+    targetRot: "4",
+    posV: "5", //{x,y}
+    rotV: "6", 
+    hide: "7",
+    destory: "8"}
 const fleet = {
     size: "0",
     transform: "1"};
@@ -83,7 +88,9 @@ const command = {
     target: "2", //transform
     split: "3", //Size of new fleet
     merge: "4"};
-
+const gameMap = {
+    height: "0",
+    width: "1"};
 const scenes = {
     start: 0,
     makeGame: 1,
@@ -106,7 +113,7 @@ var gameInfo = {
     name: "",
     owner: "",
     pointsMax: 0,
-    playerCount: 0,
+    players: [],
     maxPlayers: 0,
     fleetSize: 0};
 
@@ -180,21 +187,23 @@ Conn.onmessage = function (message) { //Receive and direct or process all socket
                 gameInfo.name = info[game.name];
                 gameInfo.owner = info[game.owner];
                 gameInfo.maxPlayers = info[game.maxPlayers];
-                gameInfo.fleetSize = info[game.fleetSize];
-                gameInfo.pointsMax = info[game.fleetPoints];
-                gameInfo.playerCount = (info[game.players] == []) ? 0 : info[game.players].length;
+                gameInfo.fleetSize = info[game.shipSize];
+                gameInfo.pointsMax = info[game.shipPoints];
+                gameInfo.players = [];
+                for(var i = 0; i < info[game.players].length; i++){
+                    var play = new gamePlayer(info[game.players][i][player.id]);
+                    play.update(info[game.players][i]);
+                    gameInfo.players.push(play);
+                }
                 document.getElementById("glName").innerText = gameInfo.name;
                 document.getElementById("glOwner").innerText = "Owner: " + gameInfo.owner;
-                document.getElementById("glPlayers").innerText = "Players: " + gameInfo.playerCount + "/" + gameInfo.maxPlayers;
+                document.getElementById("glPlayers").innerText = "Players: " + gameInfo.players.length + "/" + gameInfo.maxPlayers;
                 document.getElementById("glFleetSize").innerText = "Fleet Size: " + gameInfo.fleetSize;
                 document.getElementById("glAttack").value = 0;
                 document.getElementById("glDefense").value = 0;
                 document.getElementById("glSpeed").value = 0;
                 document.getElementById("glScout").value = 0;
-                setStat("Attack");
-                setStat("Defense");
-                setStat("Speed");
-                setStat("Scout");
+                setStats(false);
                 scene(scenes.lobby);
             break;
             case action.joinTeam:
@@ -202,6 +211,7 @@ Conn.onmessage = function (message) { //Receive and direct or process all socket
             case action.makeGame:
             break;
             case action.name:
+                console.log("Name");
                 document.getElementById("userNameError").hidden = true;
                 var buttons = document.getElementsByClassName("startNav");
                 for(var i = 0; i < buttons.length; ++i){
@@ -211,6 +221,7 @@ Conn.onmessage = function (message) { //Receive and direct or process all socket
                 document.getElementById("userName").value = user.name;
             break;
             case action.servers:
+                console.log("Servers");
                 var serversS = "";
                 if(data[field.servers] == null){
                     serversS = "<div><h2>No games avaliable<h2></div>";
@@ -219,31 +230,45 @@ Conn.onmessage = function (message) { //Receive and direct or process all socket
                     for(var i = 0; i < data[field.servers].length; ++i){
                         info = data[field.servers][i];
                         serversS += '<div class="serverInfo" onclick="join(' + info[game.id] + ');"><p>ID: ' + info[game.id] + "</p><p>Name: " + info[game.name]
-                            + "</p><p>Owner: " + info[game.owner] + "</p><p>Fleet Size: " + info[game.fleetSize] + "</p><p>Points: " + info[game.fleetPoints]
+                            + "</p><p>Owner: " + info[game.owner] + "</p><p>Fleet Size: " + info[game.shipSize] + "</p><p>Points: " + info[game.shipPoints]
                             + "</p><p>Players: " + (info[game.players].length || 0) + "/" + info[game.maxPlayers] + "</p></div>";
                     }
                 }
                 document.getElementById("serverList").innerHTML = serversS;
             break;
             case action.update:
+                console.log("Update");
                 if (currentScene == scenes.game){
 
                 } else if (currentScene == scenes.lobby) {
                     var info = data[field.game];
-                    gameInfo.name = info[game.name];
-                    gameInfo.owner = info[game.owner];
-                    gameInfo.maxPlayers = info[game.maxPlayers];
-                    gameInfo.fleetSize = info[game.fleetSize];
-                    gameInfo.pointsMax = info[game.fleetPoints];
-                    gameInfo.playerCount = (info[game.players] == []) ? 0 : info[game.players].length;
+                    if(info[game.name]) gameInfo.name = info[game.name];
+                    if(info[game.owner]) gameInfo.owner = info[game.owner];
+                    if(info[game.maxPlayers]) gameInfo.maxPlayers = info[game.maxPlayers];
+                    if(info[game.shipSize]) gameInfo.fleetSize = info[game.shipSize];
+                    if(info[game.shipPoints]) gameInfo.pointsMax = info[game.shipPoints];
+                    if(info[game.players]) {
+                        for(var i = 0; i < info[game.players].length; i++){
+                            var unfound = true;
+                            for(var j = 0; j < gameInfo.players.length; j++){
+                                if(gameInfo.players[j].id == info[game.players][i][player.id]){
+                                    unfound = false;
+                                    gameInfo.players[j].update(info[game.players][i]);
+                                    break;
+                                }
+                            }
+                            if(unfound){
+                                var play = new gamePlayer(info[game.players][i][player.id]);
+                                play.update(info[game.players][i]);
+                                gameInfo.players.push(play);
+                            }
+                        }
+                    }
                     document.getElementById("glName").innerText = gameInfo.name;
                     document.getElementById("glOwner").innerText = "Owner: " + gameInfo.owner;
-                    document.getElementById("glPlayers").innerText = "Players: " + gameInfo.playerCount + "/" + gameInfo.maxPlayers;
+                    document.getElementById("glPlayers").innerText = "Players: " + gameInfo.players.length + "/" + gameInfo.maxPlayers;
                     document.getElementById("glFleetSize").innerText = "Fleet Size: " + gameInfo.fleetSize;
-                    setStat("Attack");
-                    setStat("Defense");
-                    setStat("Speed");
-                    setStat("Scout");
+                    setStats();
                 }
             break;
         }
@@ -275,6 +300,24 @@ function getCookie(cook){
     }
     return "";
 }
+class gamePlayer{
+    constructor(id){
+        this.id = id;
+    }
+    update(info){
+        if(info[player.delete]) this.delete()
+    }
+    get id(){
+        return this.id;
+    }
+    id(x){
+        this.id = x;
+    }
+    delete(){
+        gameInfo.players.splice(gameInfo.players.indexOf(this), 1);
+        document.getElementById("glPlayers").innerText = "Players: " + gameInfo.players.length + "/" + gameInfo.maxPlayers;
+    }
+}
 //BUTTONS -----------------------------------------------------------------------------------------------------------
 function setName(){
     var name = document.getElementById("userName").value;
@@ -295,8 +338,8 @@ function makeGame(){
     var gameObj = {};
     gameObj[game.name] = document.getElementById("mgName").value;
     gameObj[game.maxPlayers] = document.getElementById("mgPlayers").value;
-    gameObj[game.fleetSize] = document.getElementById("mgFleet").value;
-    gameObj[game.fleetPoints] = document.getElementById("mgPoints").value;
+    gameObj[game.shipSize] = document.getElementById("mgFleet").value;
+    gameObj[game.shipPoints] = document.getElementById("mgPoints").value;
     sendObj[field.game] = gameObj;
     Send(sendObj);
 }
@@ -307,28 +350,53 @@ function computePoints(){
     user.scout = parseInt(document.getElementById("glScout").value);
     user.points = user.attack + user.defense + user.speed + user.scout;
     document.getElementById("glFleetPoints").innerText = "Points: " + user.points + "/" + gameInfo.pointsMax;
-    document.getElementById("glAttack").setAttribute("max", (gameInfo.pointsMax - user.points + user.attack));
-    document.getElementById("glDefense").setAttribute("max", (gameInfo.pointsMax - user.points + user.defense));
-    document.getElementById("glSpeed").setAttribute("max", (gameInfo.pointsMax - user.points + user.speed));
-    document.getElementById("glScout").setAttribute("max", (gameInfo.pointsMax - user.points + user.scout));
+    document.getElementById("glAttack").setAttribute("max", (Math.min(100, gameInfo.pointsMax - user.points + user.attack)));
+    document.getElementById("glDefense").setAttribute("max", (Math.min(100, gameInfo.pointsMax - user.points + user.defense)));
+    document.getElementById("glSpeed").setAttribute("max", (Math.min(100, gameInfo.pointsMax - user.points + user.speed)));
+    document.getElementById("glScout").setAttribute("max", (Math.min(100, gameInfo.pointsMax - user.points + user.scout)));
 }
-function setStat(stat){
+function setStat(stat, sendStats=true){
     computePoints();
     if(user.points > gameInfo.pointsMax){
         document.getElementById("gl" + stat).value = parseInt(document.getElementById("gl" + stat).value) + gameInfo.pointsMax - user.points;
         computePoints();
     }
-    var playerInfo = {};
-    playerInfo[player.attack] = user.attack;
-    playerInfo[player.defense] = user.defense;
-    playerInfo[player.speed] = user.speed;
-    playerInfo[player.scout] = user.scout;
-    var gInfo = {};
-    gInfo[game.players] = [playerInfo];
-    var info = {};
-    info[field.action] = action.update;
-    info[field.game] = gInfo;
-    Send(info)
+    if(sendStats){
+        var playerInfo = {};
+        playerInfo[player.attack] = user.attack;
+        playerInfo[player.defense] = user.defense;
+        playerInfo[player.speed] = user.speed;
+        playerInfo[player.scout] = user.scout;
+        var gInfo = {};
+        gInfo[game.players] = [playerInfo];
+        var info = {};
+        info[field.action] = action.update;
+        info[field.game] = gInfo;
+        Send(info)
+    }
+}
+function setStats(sendStats=true){
+    computePoints();
+    if(user.points > gameInfo.pointsMax){
+        document.getElementById("glAttack").value = 0;
+        document.getElementById("glDefense").value = 0;
+        document.getElementById("glSpeed").value = 0;
+        document.getElementById("glScout").value = 0;
+        computePoints();
+    }
+    if(sendStats){
+        var playerInfo = {};
+        playerInfo[player.attack] = user.attack;
+        playerInfo[player.defense] = user.defense;
+        playerInfo[player.speed] = user.speed;
+        playerInfo[player.scout] = user.scout;
+        var gInfo = {};
+        gInfo[game.players] = [playerInfo];
+        var info = {};
+        info[field.action] = action.update;
+        info[field.game] = gInfo;
+        Send(info)
+    }
 }
 function join(gameId){
     var obj = {};

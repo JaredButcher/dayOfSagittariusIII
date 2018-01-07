@@ -53,7 +53,6 @@ class HTTPHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         #self.totalTime = 0
         #timeCalibrate()
-        print("Request Received: " + self.client_address[0])
         self.statusCode = 200
         self.mime = "text/html"
         body = bytes(self.route(), "utf8")
@@ -64,8 +63,6 @@ class HTTPHandler(BaseHTTPRequestHandler):
         #self.totalTime += timeF("Cookies")
         self.end_headers()
         self.wfile.write(body)
-        print("Response Sent: " + self.client_address[0])
-
         #self.totalTime += timeF("Write")
         #print("Total: " + str(self.totalTime))
         #print()
