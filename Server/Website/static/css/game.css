@@ -11,7 +11,7 @@ label, input{
         width: auto;
     }
     .gridContainer{
-        display: grid;
+        display: none;  /*JS will set this to grid*/
         width: 600px;
         left: 25%;
         grid-template-columns: 1fr 1fr 1fr;

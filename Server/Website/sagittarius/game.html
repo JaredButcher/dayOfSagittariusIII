@@ -1,8 +1,8 @@
 <script src="/static/js/sagittarius.js"></script>
 <link type="text/css" href="/static/css/game.css" rel="stylesheet"/>
 <div id="startButtons">
-    <button class="startNav" onclick='scene(scenes.servers);'>Server Browser</button>
-    <button class="startNav" onclick='scene(scenes.makeGame);'>Make Game</button>
+    <button class="startNav" onclick='interface.scene(interface.scenes.servers);'>Server Browser</button>
+    <button class="startNav" onclick='interface.scene(interface.scenes.makeGame);'>Make Game</button>
 </div>
 <div id="start" hidden>
     <h1>The Day of Sagittarius III</h1>
@@ -10,7 +10,7 @@
         <label>Enter a name</label><input id="userName" type="text" />
         <p class="error" id="userNameError">* Name unavailble</p>
     </div>
-    <button onclick='setName();'>Set Name</button>
+    <button onclick='interface.setName();'>Set Name</button>
 </div>
 <div id="servers" hidden>
     <h1>Server Browser</h1>
@@ -22,7 +22,7 @@
     <label>Max Players(2-12): </label><input id="mgPlayers" type="number"  min="2" max="12"/>
     <label>Fleet Size(100-1000000): </label><input id="mgFleet" type="number"  min="100" max="1000000"/>
     <label>Ship Points(0-400): </label><input id="mgPoints" type="number"  min="0" max="400"/>
-    <button onclick="makeGame();">Create Game</button>
+    <button onclick="interface.makeGame();">Create Game</button>
 </div>
 <div id="lobby" class="gridContainer">
     <h1 class="gridSpan" id="glName"></h1>
@@ -30,14 +30,14 @@
     <p id="glOwner"></p>
     <p id="glFleetSize"></p>
     <p class="gridSpan" id="glFleetPoints"></p>
-    <label>Attack: </label><input id="glAttack" type="number" oninput='setStat("Attack");' min="0" max="400"/>
-    <label>Defense: </label><input id="glDefense" type="number" oninput='setStat("Defense");' min="0" max="400"/>
-    <label>Speed: </label><input id="glSpeed" type="number" oninput='setStat("Speed");' min="0" max="400"/>
-    <label>Scout: </label><input id="glScout" type="number" oninput='setStat("Scout");' min="0" max="400"/>
-    <button id="glReady" onclick="playerReady();">Ready</button>
+    <label>Attack: </label><input id="glAttack" type="number" oninput='interface.setStat("Attack");' min="0" max="400"/>
+    <label>Defense: </label><input id="glDefense" type="number" oninput='interface.setStat("Defense");' min="0" max="400"/>
+    <label>Speed: </label><input id="glSpeed" type="number" oninput='interface.setStat("Speed");' min="0" max="400"/>
+    <label>Scout: </label><input id="glScout" type="number" oninput='interface.setStat("Scout");' min="0" max="400"/>
+    <button id="glReady" onclick="interface.playerReady();">Ready</button>
     <div class="gridSpan" id="glPlayerInfo"></div>
 </div>
 <div id="game" hidden>
     <h1>Game</h1>
 </div>
-<script>start();</script>
+<script>interface.start();</script>
