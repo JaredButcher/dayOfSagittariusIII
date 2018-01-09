@@ -25,7 +25,8 @@ const network = {
         joinFail: "3",
         createFail: "4",
         badInit: "5",
-        forbidden: "6"},
+        forbidden: "6",
+        nameUsed: "7"},
     game: {
         id: "0",
         players: "1", //[player]
@@ -146,6 +147,13 @@ network.conn.onmessage = function (message) { //Receive and direct or process al
             case network.action.command:
             break;
             case network.action.error:
+                switch(data[network.field.error]){
+                    case network.error.nameUsed:
+                        if(interface.currentScene == interface.scenes.start){
+                            document.getElementById("userNameError").style.visibility = "visible";
+                        }
+                    break;
+                }
             break;
             case network.action.init:
             break;
@@ -182,7 +190,9 @@ network.conn.onmessage = function (message) { //Receive and direct or process al
             break;
             case network.action.name:
                 console.log("Name");
-                document.getElementById("userNameError").hidden = true;
+                document.getElementById("userNameError").style.visibility = "hidden";
+                document.getElementById("nameConfierm").hidden = false;
+                document.getElementById("nameConfierm").innerText = "Name set to: " + data[network.field.name];
                 var buttons = document.getElementsByClassName("startNav");
                 for(var i = 0; i < buttons.length; ++i){
                     buttons[i].disabled = false;
@@ -290,6 +300,7 @@ const interface = {
     },
     //BUTTONS -----------------------------------------------------------------------------------------------------------
     setName: function(){
+        document.getElementById("nameConfierm").hidden = true;
         var name = document.getElementById("userName").value;
         var sendObj = {};
         sendObj[network.field.action] = network.action.name;

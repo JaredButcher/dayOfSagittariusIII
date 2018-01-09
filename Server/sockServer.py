@@ -70,7 +70,7 @@ class client:
                             res[field.name.value] = self.user.getName()
                             self.send(res)
                         else:
-                            self.sendError(error.createFail.value)
+                            self.sendError(error.nameUsed.value)
                     #SERVER BROWSER-------------------------------------------------------------
                     elif message[field.action.value] == action.servers.value:
                         self.user.rmGame()
@@ -164,6 +164,7 @@ class error(Enum):
     createFail = "4"
     badInit = "5"
     forbidden = "6"
+    nameUsed = "7"
 @unique
 class game(Enum):
     id = "0"
