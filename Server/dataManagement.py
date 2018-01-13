@@ -16,7 +16,7 @@ class data:
         self.idCounter = 0
     def makeUser(self):
         with self.lock:
-            newUser = user()
+            newUser = user(getNewSessionId(self.users))
             self.users.append(newUser)
             return newUser
     def getUser(self, session):
@@ -53,11 +53,9 @@ class data:
             return name
 
 class user:
-    def __init__(self, session=None, sock=None):
+    def __init__(self, session, sock=None):
         self.lock = RLock()
         self.session = session
-        if(session == None):
-            self.session = getNewSessionId()
         self.sock = sock
         self.game = None
         self.name = None
@@ -81,18 +79,15 @@ class user:
                 self.game = None
 
 
-#A poor and insecure unique random number generator
+#A poor and ineffecent unique random number generator
 #TODO replace
 size = 128
-start = rng.getrandbits(k=size)
-key = rng.getrandbits(k=size).to_bytes(int(size / 8), byteorder="big")
-def getNewSessionId():
-    global start, key, size
-    parts = []
-    for b1, b2 in zip(start.to_bytes(int(size / 8), byteorder="big"), key):
-        parts.append("%x" % (b1 ^ b2))
-    start = (start + rng.getrandbits(k=int(size / 2))) % 2^size
-    print("Message: " + ''.join(parts))
-    return ''.join(parts)
+def getNewSessionId(users):
+    key = rng.getrandbits(k=size).to_bytes(int(size / 8), 'big').hex()
+    for user in users:
+        if user.session == key:
+            return getNewSessionId(users)
+    print("Session: " + key)
+    return key
     
     

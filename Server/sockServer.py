@@ -13,13 +13,16 @@ def start(port, data):
     dataStor = data
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    coro = websockets.server.serve(handle_conn, host='', port=port, loop=loop)
-    server = loop.run_until_complete(coro)
-    loop.run_forever()
-    print("close")
-    server.close()
-    loop.run_until_complete(server.wait_closed())
-    loop.close()
+    try:
+        coro = websockets.server.serve(handle_conn, host='', port=port, loop=loop)
+        server = loop.run_until_complete(coro)
+    except OSError:
+        print("close")
+    else:
+        loop.run_forever()
+        server.close()
+        loop.run_until_complete(server.wait_closed())
+        loop.close()
 async def handle_conn(conn, Uri):
     print("URI: " + Uri)
     user = client(conn)

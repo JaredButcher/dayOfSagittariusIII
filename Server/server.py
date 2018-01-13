@@ -10,7 +10,12 @@ DEBUG = True
 serverData = dataManagement.data(DEBUG)
 
 httpd = threading.Thread(target = httpServer.start, args=(HTTP_PORT, serverData))
-sockd = threading.Thread(target = sockServer.start, args=(SOCK_PORT, serverData))
-
 httpd.start()
-sockd.start()
+
+while(True):
+    try:
+        sockd = threading.Thread(target = sockServer.start, args=(SOCK_PORT, serverData))
+        sockd.start()
+        sockd.join()
+    except Exception:
+        break;

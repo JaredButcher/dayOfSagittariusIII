@@ -318,35 +318,28 @@ class player:
                         self.setTeam(team)
             if sockServer.player.attack.value in info:
                 player.attack = min(100, int(info[sockServer.player.attack.value]))
-                send = True
                 if self.statCount() > self.game.shipPoints:
                     self.attack = max(0, self.attack - (self.statCount - self.game.shipPoints))
             if sockServer.player.defense.value in info:
                 player.defense = min(100, int(info[sockServer.player.defense.value]))
-                send = True
                 if self.statCount() > self.game.shipPoints:
                     self.defense = max(0, self.defense - (self.statCount - self.game.shipPoints))
             if sockServer.player.speed.value in info:
                 player.speed = min(100, int(info[sockServer.player.speed.value]))
-                send = True
                 if self.statCount() > self.game.shipPoints:
                     self.speed = max(0, self.speed - (self.statCount - self.game.shipPoints))
             if sockServer.player.scout.value in info:
                 player.scout = min(100, int(info[sockServer.player.scout.value]))
-                send = True
                 if self.statCount() > self.game.shipPoints:
                     self.scout = max(0, self.scout - (self.statCount - self.game.shipPoints))
             if sockServer.player.primary.value in info:
                 player.primary = info[sockServer.player.primary.value]
-                send = True
             if sockServer.player.secondary.value in info:
                 player.secondary = info[sockServer.player.secondary.value]
-                send = True
         except (TypeError, ValueError):
             pass
-        if send:
-            self.statLimit()
-            self.send(self.getInfo(True))
+        self.statLimit()
+        self.send(self.updateBase(self.getInfo(True)))
     def statCount(self):
         return self.attack + self.defense + self.speed + self.scout
     def statLimit(self):

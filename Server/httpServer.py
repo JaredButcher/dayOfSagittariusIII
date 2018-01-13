@@ -55,11 +55,12 @@ class HTTPHandler(BaseHTTPRequestHandler):
         #timeCalibrate()
         self.statusCode = 200
         self.mime = "text/html"
+        self.sendCookies = True
         body = bytes(self.route(), "utf8")
         #self.totalTime += timeF("Body")
         self.send_response(self.statusCode)
         self.send_header("Content-type", self.mime)
-        self.handleCookies()
+        if self.sendCookies: self.handleCookies()
         #self.totalTime += timeF("Cookies")
         self.end_headers()
         self.wfile.write(body)
@@ -119,6 +120,7 @@ class HTTPHandler(BaseHTTPRequestHandler):
             return self.cHome("error")
 
     def cStatic(self, unused):
+        self.sendCookies = False
         path = self.path[len("/"):]
         try:
             fContent = self.readFile(path)

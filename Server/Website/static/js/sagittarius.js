@@ -167,11 +167,16 @@ network.conn.onmessage = function (message) { //Receive and direct or process al
                 sag.gameInfo.maxPlayers = info[network.game.maxPlayers];
                 sag.gameInfo.fleetSize = info[network.game.shipSize];
                 sag.gameInfo.pointsMax = info[network.game.shipPoints];
+                sag.gameInfo.teams = info[network.game.teams];
                 sag.gameInfo.players = [];
                 for(var i = 0; i < info[network.game.players].length; i++){
                     var play = new player(info[network.game.players][i][network.player.id]);
                     play.update(info[network.game.players][i]);
                     sag.gameInfo.players.push(play);
+                    if(play.name == sag.user.name){
+                        sag.user.player = play;
+                        play.update({});
+                    }
                 }
                 document.getElementById("glName").innerText = sag.gameInfo.name;
                 document.getElementById("glOwner").innerText = "Owner: " + sag.gameInfo.owner;
@@ -184,12 +189,9 @@ network.conn.onmessage = function (message) { //Receive and direct or process al
                 interface.setStat(null, false);
                 interface.scene(interface.scenes.lobby);
             break;
-            case network.action.joinTeam:
-            break;
             case network.action.makeGame:
             break;
             case network.action.name:
-                console.log("Name");
                 document.getElementById("userNameError").style.visibility = "hidden";
                 document.getElementById("nameConfierm").hidden = false;
                 document.getElementById("nameConfierm").innerText = "Name set to: " + data[network.field.name];
@@ -222,13 +224,18 @@ network.conn.onmessage = function (message) { //Receive and direct or process al
                 if (interface.currentScene == interface.scenes.game){
 
                 } else if (interface.currentScene == interface.scenes.lobby) {
+                    var sendStats = false;
                     var info = data[network.field.game];
-                    if(info[network.game.name]) sag.gameInfo.name = info[network.game.name];
-                    if(info[network.game.owner]) sag.gameInfo.owner = info[network.game.owner];
-                    if(info[network.game.maxPlayers]) sag.gameInfo.maxPlayers = info[network.game.maxPlayers];
-                    if(info[network.game.shipSize]) sag.gameInfo.fleetSize = info[network.game.shipSize];
-                    if(info[network.game.shipPoints]) sag.gameInfo.pointsMax = info[network.game.shipPoints];
-                    if(info[network.game.players]) {
+                    if(info[network.game.name] != null) sag.gameInfo.name = info[network.game.name];
+                    if(info[network.game.owner] != null) sag.gameInfo.owner = info[network.game.owner];
+                    if(info[network.game.maxPlayers] != null) sag.gameInfo.maxPlayers = info[network.game.maxPlayers];
+                    if(info[network.game.shipSize] != null) sag.gameInfo.fleetSize = info[network.game.shipSize];
+                    if(info[network.game.shipPoints] != null) { 
+                        sag.gameInfo.pointsMax = info[network.game.shipPoints]; 
+                        sendStats = true; 
+                    }
+                    if(info[network.game.teams] != null) sag.gameInfo.teams = info[network.game.teams];
+                    if(info[network.game.players] != null) {
                         for(var i = 0; i < info[network.game.players].length; i++){
                             var unfound = true;
                             for(var j = 0; j < sag.gameInfo.players.length; j++){
@@ -242,6 +249,10 @@ network.conn.onmessage = function (message) { //Receive and direct or process al
                                 var play = new player(info[network.game.players][i][network.player.id]);
                                 play.update(info[network.game.players][i]);
                                 sag.gameInfo.players.push(play);
+                                if(play.name == sag.user.name){
+                                    sag.user.player = play;
+                                    play.update({});
+                                }
                             }
                         }
                     }
@@ -249,7 +260,7 @@ network.conn.onmessage = function (message) { //Receive and direct or process al
                     document.getElementById("glOwner").innerText = "Owner: " + sag.gameInfo.owner;
                     document.getElementById("glPlayers").innerText = "Players: " + sag.gameInfo.players.length + "/" + sag.gameInfo.maxPlayers;
                     document.getElementById("glFleetSize").innerText = "Fleet Size: " + sag.gameInfo.fleetSize;
-                    interface.setStat();
+                    interface.setStat("", sendStats);
                 }
             break;
         }
@@ -372,11 +383,22 @@ const interface = {
     },
     start: function(){
         this.scene(this.scenes.start);
+    },
+    cycleTeam: function(){
+        var playerInfo = {};
+        playerInfo[network.player.team] = sag.teams[(parseInt(sag.user.player.team.id) + 1) % sag.gameInfo.teams].id;
+        var gInfo = {};
+        gInfo[network.game.players] = [playerInfo];
+        var info = {};
+        info[network.field.action] = network.action.update;
+        info[network.field.game] = gInfo;
+        network.send(info)
     }
 };
 const sag = {
     user: {
         name: "",
+        player: null,
         points: 0,
         attack: 0,
         defense: 0,
@@ -384,10 +406,33 @@ const sag = {
         scout: 0,
         fleets: []
     },
+    teams: {
+        0: {
+            id: 0,
+            name: "red",
+            color: "#ff0000"
+        },
+        1: {
+            id: 1,
+            name: "blue",
+            color: "#0000ff"
+        },
+        2: {
+            id: 2,
+            name: "green",
+            color: "#00ff00"
+        },
+        3: {
+            id: 3,
+            name: "yellow",
+            color: "#ffff00"
+        }
+    },
     gameInfo: {
         id: "",
         name: "",
         owner: "",
+        teams: 1,
         pointsMax: 0,
         players: [],
         maxPlayers: 0,
@@ -415,18 +460,18 @@ const sag = {
 class player{
     constructor(id){
         this.id = id;
-        this.name = ""
-        this.team = 0
-        this.ready = false
-        this.fleets = []
-        this.scouts = []
-        document.getElementById("glPlayerInfo").innerHTML += '<div class="gridContainer" id="player'+ this.id +'"><p>Name: '+ this.name 
-        +'</p><p>Team: '+ this.team +'</p><p>'+ this.ready +'</p></div>';
+        this.name = "";
+        this.team = sag.teams[0];
+        this.ready = false;
+        this.fleets = [];
+        this.scouts = [];
+        document.getElementById("glPlayerInfo").innerHTML += '<div style="display: grid;" class="gridContainer" id="player'+ this.id +'"><p>Name: '+ this.name 
+        +'</p>' + this.teamButton() + '<p>'+ this.ready +'</p></div>';
     }
-    update(info){
-        if(info[network.player.name]) this.name = info[network.player.name];
-        if(info[network.player.team]) this.team = info[network.player.team];
-        if(info[network.player.fleets]){
+    update(info={}){
+        if(info[network.player.name] != null) this.name = info[network.player.name];
+        if(info[network.player.team] != null) this.team = sag.teams[info[network.player.team]];
+        if(info[network.player.fleets] != null){
             for(var i = 0; i < info[network.player.fleets].length; i++){
                 var unfound = true;
                 for(var j = 0; j < this.fleets.length; j++){
@@ -443,7 +488,7 @@ class player{
                 }
             }
         }
-        if(info[network.player.scouts]){
+        if(info[network.player.scouts] != null){
             for(var i = 0; i < info[network.player.scouts].length; i++){
                 var unfound = true;
                 for(var j = 0; j < this.scouts.length; j++){
@@ -460,15 +505,18 @@ class player{
                 }
             }
         }
-        document.getElementById('player'+ this.id).innerHTML = '<p>Name: '+ this.name 
-        +'</p><p>Team: '+ this.team +'</p><p>'+ this.ready +'</p>';
-        if(info[network.player.delete]) this.delete();
+        document.getElementById('player'+ this.id).innerHTML = '<p>Name: '+ this.name +'</p>' + this.teamButton() + '<p>'+ this.ready +'</p>';
+        if(info[network.player.delete] != null) this.delete();
     }
     get id(){
         return this.id;
     }
     id(x){
         this.id = x;
+    }
+    teamButton(){
+        return '<lable>Team: </lable><button style="background-color: ' + this.team.color + ';"' + (this == sag.user.player ? 'id="team'
+         + this.id + '" onclick="interface.cycleTeam();"' : '') + '>' + this.team.name + '</button>'
     }
     delete(){
         sag.gameInfo.players.splice(sag.gameInfo.players.indexOf(this), 1);
