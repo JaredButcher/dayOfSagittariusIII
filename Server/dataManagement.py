@@ -3,6 +3,7 @@ import hashlib
 import secrets
 import sockServer
 import binascii
+import datetime
 from sagittarius import sagGame
 
 rng = secrets.SystemRandom()
@@ -16,6 +17,7 @@ class data:
         self.idCounter = 0
     def makeUser(self):
         with self.lock:
+            self.checkUserAges()
             newUser = user(getNewSessionId(self.users))
             self.users.append(newUser)
             return newUser
@@ -51,6 +53,15 @@ class data:
                 if x.getName() == name: return None
             user.setName(name)
             return name
+    def checkUserAges(self):
+        time = datetime.datetime.now()
+        print("check")
+        for user in self.users:
+            if user.getSock() == None:
+                if time - user.age > datetime.timedelta(0, 3600, 0): #exist for an hour
+                    print("rm")
+                    self.removeUser(user)
+                    user.rmGame()
 
 class user:
     def __init__(self, session, sock=None):
@@ -59,8 +70,10 @@ class user:
         self.sock = sock
         self.game = None
         self.name = None
+        self.age = datetime.datetime.now()
     def setSock(self, sock):
         with self.lock:
+            self.age = datetime.datetime.now()
             self.sock = sock
     def getSock(self):
         with self.lock:
@@ -71,6 +84,7 @@ class user:
         return self.name
     def setName(self, name):
         with self.lock:
+            self.age = datetime.datetime.now()
             self.name = name
     def rmGame(self):
         with self.lock:

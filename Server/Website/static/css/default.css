@@ -1,5 +1,9 @@
 body{
     font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    height: 100%;
+}
+html{
+    height: 100%;
 }
 .error{
     color: maroon;
@@ -57,15 +61,25 @@ input.ng-dirty.ng-invalid {
     box-shadow: 0 .25em 0 0 white, 0 .5em 0 0 white;
     border-radius: 10px;
 }
+#wrap{
+    min-height: 100%;
+}
+#content{
+    overflow: auto;
+    padding-bottom: 40px;
+}
 #footer{
     width: 100%;
     background: lightslategray;
-    position: absolute;
-    bottom: 0px;
-    padding-bottom: 10px;
-    padding-top: 10px;
+    position: relative;
     color: white;
-    text-align: center
+    text-align: center;
+    margin-top: -40px;
+    height: 40px;
+    clear: both;
+}
+#footer > *{
+    padding: 10px 10px;
 }
 h1{
     font-size: 30px;

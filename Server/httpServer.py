@@ -74,8 +74,10 @@ class HTTPHandler(BaseHTTPRequestHandler):
         if "Cookie" in self.headers:
             cook.load(self.headers["Cookie"])
             if "session" in cook:
+                print("session")
                 self.user = dataStor.getUser(cook["session"].value)
                 if self.user != None:
+                    print(self.user)
                     return
         user = dataStor.makeUser()
         cook["session"] = user.getSession()

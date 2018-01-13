@@ -23,20 +23,45 @@
     <label>Max Players(2-12): </label><input id="mgPlayers" type="number"  min="2" max="12"/>
     <label>Fleet Size(100-1000000): </label><input id="mgFleet" type="number"  min="100" max="1000000"/>
     <label>Ship Points(0-400): </label><input id="mgPoints" type="number"  min="0" max="400"/>
-    <button onclick="interface.makeGame();">Create Game</button>
+    <button style="grid-column: 2;" onclick="interface.makeGame();">Create Game</button>
 </div>
-<div id="lobby" class="gridContainer">
-    <h1 class="gridSpan" id="glName"></h1>
-    <p id="glPlayers"></p>
-    <p id="glOwner"></p>
-    <p id="glFleetSize"></p>
-    <p class="gridSpan" id="glFleetPoints"></p>
-    <label>Attack: </label><input id="glAttack" type="number" oninput='interface.setStat("Attack");' min="0" max="400"/>
-    <label>Defense: </label><input id="glDefense" type="number" oninput='interface.setStat("Defense");' min="0" max="400"/>
-    <label>Speed: </label><input id="glSpeed" type="number" oninput='interface.setStat("Speed");' min="0" max="400"/>
-    <label>Scout: </label><input id="glScout" type="number" oninput='interface.setStat("Scout");' min="0" max="400"/>
-    <button id="glReady" onclick="interface.playerReady();">Ready</button>
-    <div class="gridSpan" id="glPlayerInfo"></div>
+<div id="lobby" class="cont">
+    <div>
+        <h1 class="gridSpan" id="glName"></h1>
+        <p id="glPlayers"></p>
+        <p id="glOwner"></p>
+        <p id="glFleetSize"></p>
+        <button id="glReady" onclick="interface.playerReady();">Ready</button>
+    </div><div class="gridContainer" id="stats">
+        <p class="gridSpan" id="glFleetPoints"></p>
+        <label>Attack: </label><input id="glAttack" type="number" oninput='interface.setStat("Attack");' min="0" max="400"/>
+        <label>Defense: </label><input id="glDefense" type="number" oninput='interface.setStat("Defense");' min="0" max="400"/>
+        <label>Speed: </label><input id="glSpeed" type="number" oninput='interface.setStat("Speed");' min="0" max="400"/>
+        <label>Scout: </label><input id="glScout" type="number" oninput='interface.setStat("Scout");' min="0" max="400"/>
+    </div><div>
+        <select id="priSel">
+            <option value="laser">Laser</option>
+            <option value="plasma">Plasma Cannon</option>
+            <option value="rail">Rail Gun</option>
+            <option value="missle">Missle</option>
+            <option value="ecm">ECM</option>
+            <option value="jump">Tatical Jump</option>
+            <option value="repair">Repair Team</option>
+        </select>
+        <p id="priDam"></p><p id="priRange"></p><p id="priLimit"></p><p id="priDisc"></p>
+    </div><div>
+        <select id="secSel">
+            <option value="laser">Laser</option>
+            <option value="plasma">Plasma Cannon</option>
+            <option value="rail">Rail Gun</option>
+            <option value="missle">Missle</option>
+            <option value="ecm">ECM</option>
+            <option value="jump">Tatical Jump</option>
+            <option value="repair">Repair Team</option>
+        </select>
+        <p id="secDam"></p><p id="secRange"></p><p id="secLimit"></p><p id="secDisc"></p>
+    </div>
+    <div id="glPlayerInfo"></div>
 </div>
 <div id="game" hidden>
     <h1>Game</h1>

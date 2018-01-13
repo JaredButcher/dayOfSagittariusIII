@@ -1,19 +1,42 @@
 #content{
     clear: both;
     margin: 5px;
+    font-size: 20px;
 }
 label, input{
     width: 100%;
 }
-
+.player{
+    background-color: lightgray;
+    border-radius: 5px;
+    border: 2px solid black;
+    text-align: center;
+}
+.player > *{
+    padding: 2px 0;
+}
+.player > button{
+    padding: 5px 10px;
+}
+#glPlayerInfo{
+    width: 100%;
+}
 @media only screen and (min-width: 640px) and (-webkit-max-device-pixel-ratio: 1.5) {
+    #content{
+        font-size: initial;
+        margin: 0px 100px;
+    }
     label, input{
         width: auto;
     }
-    .gridContainer{
-        display: none;  /*JS will set this to grid*/
+    #glPlayerInfo{
+        width: 300px;
+    }
+    #stats{
         width: 600px;
-        left: 25%;
+    }
+    .gridContainer{
+        display: grid;  /*JS will set this to grid*/
         grid-template-columns: 1fr 1fr 1fr;
     }
     .gridContainer > label{
@@ -35,5 +58,14 @@ label, input{
         border-radius: 5px;
         border: 2px solid black; 
         grid-template-columns: 1fr 1fr 1fr;
+    }
+    .cont{
+        display: grid;
+
+    }
+}
+@media only screen and (min-width: 1000px){
+    #content{
+        margin: 0px 200px;
     }
 }

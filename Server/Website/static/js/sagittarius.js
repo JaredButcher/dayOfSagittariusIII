@@ -1,4 +1,5 @@
 const network = {
+    inited: false,
     field: {
         action: "0",
         session: "1",
@@ -95,8 +96,12 @@ const network = {
         width: "1"},
     conn: new WebSocket("ws://" + window.location.hostname + ":8001/sagittarius"),
     send: function(reqObj) {
-        console.log("sending: " + JSON.stringify(reqObj));
-        this.conn.send(JSON.stringify(reqObj));
+        if(!network.inited){
+            network.init();
+        } else{
+            console.log("sending: " + JSON.stringify(reqObj));
+            this.conn.send(JSON.stringify(reqObj));
+        }
     },
     getCookieEvent: function (callback){ //Run when the session cookie is set
         if(!callback.changeInfo.removed && callback.changeInfo.cookie.name == "session"){
@@ -110,26 +115,33 @@ const network = {
     getCookie: function(cook){
         var name = cook + '=';
         var decoded = decodeURI(document.cookie);
-        var cookies = decoded.split(';');
+        var cookies = decoded.split("; ");
         for(var i = 0; i < cookies.length; i++){
             if(cookies[i].indexOf(name) == 0){
                 return cookies[i].substr(name.length, cookies[i].length);
             }
         }
         return "";
+    },
+    init: function(){
+        var res = {};
+        console.log("init")
+        res[network.field.action] = network.action.init;
+        res[network.field.session] = network.getCookie("session");
+        if(res[network.field.session] != ""){
+            console.log("Cookie")
+            network.inited = true;
+            network.send(res);
+        } else {
+            console.log("no")
+            if (!chrome){
+                console.log(browser);
+                browser.cookies.onChanged.addListener(network.getCookieEvent);
+            }
+        }
     }
 };
-network.conn.onopen = function (event) {
-    var res = {};
-    //send cookie or wait to receive one
-    res[network.field.action] = network.action.init;
-    res[network.field.session] = network.getCookie("session");
-    if(res[network.field.session] != ""){
-        network.send(res);
-    } else {
-        browser.cookies.onChanged.addListener(getCookieEvent);
-    }
-};
+network.conn.onopen = network.init;
 network.conn.onmessage = function (message) { //Receive and direct or process all socket messages
     console.log(message.data);
     var data = null;
@@ -152,6 +164,9 @@ network.conn.onmessage = function (message) { //Receive and direct or process al
                         if(interface.currentScene == interface.scenes.start){
                             document.getElementById("userNameError").style.visibility = "visible";
                         }
+                    break;
+                    case network.error.badInit:
+                        network.inited = false;
                     break;
                 }
             break;
@@ -301,7 +316,7 @@ const interface = {
                 this.serverBrowser();
             break;
             case this.scenes.lobby:
-                document.getElementById("lobby").style.display = "grid";
+                document.getElementById("lobby").style.display = "block";
             break;
             case this.scenes.game:
                 document.getElementById("game").hidden = false;
@@ -465,7 +480,7 @@ class player{
         this.ready = false;
         this.fleets = [];
         this.scouts = [];
-        document.getElementById("glPlayerInfo").innerHTML += '<div style="display: grid;" class="gridContainer" id="player'+ this.id +'"><p>Name: '+ this.name 
+        document.getElementById("glPlayerInfo").innerHTML += '<div class="gridContainer, player" id="player'+ this.id +'"><p>Name: '+ this.name 
         +'</p>' + this.teamButton() + '<p>'+ this.ready +'</p></div>';
     }
     update(info={}){
