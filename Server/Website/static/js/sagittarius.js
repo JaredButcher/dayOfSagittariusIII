@@ -316,7 +316,7 @@ const interface = {
                 this.serverBrowser();
             break;
             case this.scenes.lobby:
-                document.getElementById("lobby").style.display = "block";
+                document.getElementById("lobby").style.display = "grid";
             break;
             case this.scenes.game:
                 document.getElementById("game").hidden = false;

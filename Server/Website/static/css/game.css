@@ -17,26 +17,27 @@ label, input{
 }
 .player > button{
     padding: 5px 10px;
+    color: white;
 }
 #glPlayerInfo{
     width: 100%;
 }
 @media only screen and (min-width: 640px) and (-webkit-max-device-pixel-ratio: 1.5) {
-    #content{
-        font-size: initial;
-        margin: 0px 100px;
-    }
     label, input{
         width: auto;
     }
     #glPlayerInfo{
-        width: 300px;
+        width: auto;
+    }
+    #glReady{
+        min-width: 100px;
+        width: 50%;
     }
     #stats{
-        width: 600px;
+        min-width: 300px;
     }
     .gridContainer{
-        display: grid;  /*JS will set this to grid*/
+        display: grid;
         grid-template-columns: 1fr 1fr 1fr;
     }
     .gridContainer > label{
@@ -59,13 +60,29 @@ label, input{
         border: 2px solid black; 
         grid-template-columns: 1fr 1fr 1fr;
     }
-    .cont{
+    .contGrid{
         display: grid;
-
+        grid-template-columns: 1fr;
+    }
+    .contGrid > div{
+        margin: 5px 5px;
     }
 }
 @media only screen and (min-width: 1000px){
     #content{
+        margin: 0px 100px;
+    }
+    .contGrid{
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+}
+@media only screen and (min-width: 1400px){
+    #content{
         margin: 0px 200px;
+    }
+    .contGrid{
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
     }
 }
