@@ -36,7 +36,7 @@ const network = {
         name: "4",
         owner: "5",
         maxPlayers: "6",
-        shipSize: "7",
+        damage: "7",
         shipPoints: "8",
         mode: "9",
         teams: "10",
@@ -72,15 +72,15 @@ const network = {
         size: "0",
         transform: "1"},
     weapon: {
-        lazer: "0",
+        laser: "0",
         missle: "1",
         rail: "2",
         mine: "3",
         fighter: "4",
-        plazma: "5",
+        plasma: "5",
         emc: "6",
         jump: "7",
-        point: "8"},
+        repair: "8"},
     chatContext: {
         free: "0",
         game: "1",
@@ -180,7 +180,7 @@ network.conn.onmessage = function (message) { //Receive and direct or process al
                 sag.gameInfo.name = info[network.game.name];
                 sag.gameInfo.owner = info[network.game.owner];
                 sag.gameInfo.maxPlayers = info[network.game.maxPlayers];
-                sag.gameInfo.fleetSize = info[network.game.shipSize];
+                sag.gameInfo.damage = info[network.game.damage];
                 sag.gameInfo.pointsMax = info[network.game.shipPoints];
                 sag.gameInfo.teams = info[network.game.teams];
                 sag.gameInfo.players = [];
@@ -196,12 +196,14 @@ network.conn.onmessage = function (message) { //Receive and direct or process al
                 document.getElementById("glName").innerText = sag.gameInfo.name;
                 document.getElementById("glOwner").innerText = "Owner: " + sag.gameInfo.owner;
                 document.getElementById("glPlayers").innerText = "Players: " + sag.gameInfo.players.length + "/" + sag.gameInfo.maxPlayers;
-                document.getElementById("glFleetSize").innerText = "Fleet Size: " + sag.gameInfo.fleetSize;
+                document.getElementById("glDamage").innerText = "Damage: " + sag.gameInfo.damage + '%';
                 document.getElementById("glAttack").value = 0;
                 document.getElementById("glDefense").value = 0;
                 document.getElementById("glSpeed").value = 0;
                 document.getElementById("glScout").value = 0;
                 interface.setStat(null, false);
+                interface.weapon("pri", true);
+                interface.weapon("sec", true);
                 interface.scene(interface.scenes.lobby);
             break;
             case network.action.makeGame:
@@ -227,7 +229,7 @@ network.conn.onmessage = function (message) { //Receive and direct or process al
                     for(var i = 0; i < data[network.field.servers].length; ++i){
                         info = data[network.field.servers][i];
                         servers += '<div class="serverInfo" onclick="interface.join(' + info[network.game.id] + ');"><p>ID: ' + info[network.game.id] + "</p><p>Name: "
-                             + info[network.game.name] + "</p><p>Owner: " + info[network.game.owner] + "</p><p>Fleet Size: " + info[network.game.shipSize]
+                             + info[network.game.name] + "</p><p>Owner: " + info[network.game.owner] + "</p><p>Damage Multiplyer: " + info[network.game.damage]
                              + "</p><p>Points: " + info[network.game.shipPoints] + "</p><p>Players: " + (info[network.game.players].length || 0) + "/"
                              + info[network.game.maxPlayers] + "</p></div>";
                     }
@@ -274,8 +276,10 @@ network.conn.onmessage = function (message) { //Receive and direct or process al
                     document.getElementById("glName").innerText = sag.gameInfo.name;
                     document.getElementById("glOwner").innerText = "Owner: " + sag.gameInfo.owner;
                     document.getElementById("glPlayers").innerText = "Players: " + sag.gameInfo.players.length + "/" + sag.gameInfo.maxPlayers;
-                    document.getElementById("glFleetSize").innerText = "Fleet Size: " + sag.gameInfo.fleetSize;
+                    document.getElementById("glDamage").innerText = "Fleet Size: " + sag.gameInfo.fleetSize;
                     interface.setStat("", sendStats);
+                    interface.weapon("pri", true);
+                    interface.weapon("sec", true);
                 }
             break;
         }
@@ -308,7 +312,7 @@ const interface = {
                 document.getElementById("makeGame").style.display = "grid";
                 document.getElementById("mgName").value = sag.user.name + "`s game";
                 document.getElementById("mgPlayers").value = 6;
-                document.getElementById("mgFleet").value = 10000;
+                document.getElementById("mgDamage").value = 100;
                 document.getElementById("mgPoints").value = 200;
             break;
             case this.scenes.servers:
@@ -345,7 +349,7 @@ const interface = {
         var gameObj = {};
         gameObj[network.game.name] = document.getElementById("mgName").value;
         gameObj[network.game.maxPlayers] = document.getElementById("mgPlayers").value;
-        gameObj[network.game.shipSize] = document.getElementById("mgFleet").value;
+        gameObj[network.game.damage] = document.getElementById("mgDamage").value;
         gameObj[network.game.shipPoints] = document.getElementById("mgPoints").value;
         sendObj[network.field.game] = gameObj;
         network.send(sendObj);
@@ -408,6 +412,111 @@ const interface = {
         info[network.field.action] = network.action.update;
         info[network.field.game] = gInfo;
         network.send(info)
+    },
+    weapon: function(slot, noSend=false, same=false){
+        weapon = sag.weapon[document.getElementById(slot + "Sel").value];
+        damage = document.getElementById(slot + "Dam");
+        ammo = document.getElementById(slot + "Ammo");
+        range = document.getElementById(slot + "Range");
+        desc = document.getElementById(slot + "Desc");
+        damage.hidden = false;
+        ammo.hidden = false;
+        range.hidden = false;
+        desc.hidden = false;
+        if(slot == "pri"){
+            if(!noSend){
+                noSend = sag.user.pri == weapon;
+            }
+            sag.user.pri = weapon;
+        } else{
+            if(!noSend){
+                noSend = sag.user.sec == weapon;
+            }
+            sag.user.sec = weapon;
+        }
+        if(sag.user.pri == sag.user.sec && slot == "sec"){
+            damage.hidden = true;
+            ammo.hidden = true;
+            range.hidden = true;
+            desc.hidden = false;
+            if("ammo" in weapon){
+                desc.innerText = "Incresses ammo of primary weapon";
+            } else if(weapon == sag.weapon.ecm) {
+                desc.innerText = "Incresses range of primary weapon";
+            } else {
+                desc.innerText = "Buffs the damage of the primary weapon";
+            }
+        } else {
+            if("damage" in weapon){
+                if(sag.user.pri == sag.user.sec){
+                    damage.innerText = "Damage/sec: " + Math.round(sag.calcAttack(weapon.damage * 1.5, sag.consts.ships));
+                } else {
+                    damage.innerText = "Damage/sec: " + Math.round(sag.calcAttack(weapon.damage, sag.consts.ships));
+                }
+            }
+            if("range" in weapon) range.innerText = "Range: " + weapon.range;
+            switch(weapon){
+                case sag.weapon.laser:
+                    ammo.hidden = true;
+                    desc.innerText = "Lasers mounted on fully traversable turrents offer a flexable and moderate amount of damage at medium ranges."
+                break;
+                case sag.weapon.plasma:
+                    ammo.hidden = true;
+                    desc.innerText = "Large plasma cannons mounted in the bow offer a large amount of damage at medium ranges"
+                break;
+                case sag.weapon.repair:
+                    if(sag.user.pri == sag.user.sec){
+                        ammo.innerText = "Supplies: " + weapon.ammo * sag.consts.ships * 2;
+                    } else {
+                        ammo.innerText = "Supplies: " + weapon.ammo * sag.consts.ships;
+                    }
+                    damage.innerText = "Repair Speed: " + Math.round(-1 * weapon.damage * sag.consts.ships);
+                    desc.innerText = "Massive quanaties of nanobots directed by super computers are directed to repair minor damage, create and replace componets, or even recreate entire ships"
+                break;
+                case sag.weapon.missle:
+                    if(sag.user.pri == sag.user.sec){
+                        ammo.innerText = "Ammo: " + weapon.ammo * sag.consts.ships * 2;
+                    } else {
+                        ammo.innerText = "Ammo: " + weapon.ammo * sag.consts.ships;
+                    }
+                    damage.innerText = "Damage/volly: " + Math.round(sag.calcAttack(weapon.damage, sag.consts.ships));
+                    range.hidden = true;
+                    desc.innerText = "A set missle battery that launch powerful self guilded missles over a huge distance, they lose contact if the target is no longer spoted and can be shot down."
+                break;
+                case sag.weapon.rail:
+                    if(sag.user.pri == sag.user.sec){
+                        ammo.innerText = "Ammo: " + weapon.ammo * sag.consts.ships * 2;
+                    } else {
+                        ammo.innerText = "Ammo: " + weapon.ammo * sag.consts.ships;
+                    }
+                    damage.innerText = "Damage/volly: " + Math.round(sag.calcAttack(weapon.damage, sag.consts.ships));
+                    range.hidden = true;
+                    desc.innerText = "An electromagetic railgun that streches the length of the ship, it accurity launches powerful projectiles at excessive speeds to just about anywhere, even outside of sensor range."
+                break;
+                case sag.weapon.ecm:
+                    if(sag.user.pri == sag.user.sec){
+                        range.innerText = "Range: " + weapon.range * 1.5;
+                    }
+                    ammo.hidden = true;
+                    damage.innerText = "Damage/sec: " + weapon.damage * sag.consts.ships;
+                    desc.innerText = "Massive arryes of sensors and antennas along with banks of quantam computes are used to acheive electronic superiority, while active it will double sensor range and destory enemy scout drones and missles within range."
+                break;
+                case sag.weapon.jump:
+                    damage.hidden = true;
+                    range.hidden = true;
+                    ammo.innerText = "Jump Cores: " + weapon.ammo;
+                    desc.innerText = "A large and power-hungry device that uses sheer force to tear a hole though space itself, sensors must be onsite to provide spacel data."
+                break;
+            }
+        }
+        if(!same && slot == "pri") {
+            interface.weapon("sec", false, true);
+        } else if(!same){
+            interface.weapon("pri", false, true);
+        }
+        if(!noSend){
+            //TODO send weapons to server
+        }
     }
 };
 const sag = {
@@ -419,7 +528,9 @@ const sag = {
         defense: 0,
         speed: 0,
         scout: 0,
-        fleets: []
+        fleets: [],
+        pri: 0,
+        sec: 0
     },
     teams: {
         0: {
@@ -451,7 +562,56 @@ const sag = {
         pointsMax: 0,
         players: [],
         maxPlayers: 0,
-        fleetSize: 0
+        damage: 0
+    },
+    weapon: {
+        laser: {
+            damage: 0.05,
+            range: 100
+        },
+        plasma: {
+            damage: 0.1,
+            range: 100,
+            speed: 100
+        },
+        rail: {
+            damage: 0.05,
+            ammo: 50,
+            speed: 250
+        },
+        missle: {
+            damage: 0.1,
+            ammo: 20,
+            speed: 50
+        },
+        ecm: {
+            damage: 0.02,
+            range: 200,
+            spotting: 2
+        },
+        jump: {
+            ammo: 10
+        },
+        repair: {
+            damage: -0.01,
+            range: 100,
+            ammo: 1
+        },
+        mine: {
+
+        },
+        fighter: {
+
+        }
+    },
+    consts: {
+        ships: 15000
+    },
+    calcAttack: function(base, ships){
+        return base * (1 + sag.user.attack / 100) * sag.gameInfo.damage / 100 * ships;
+    },
+    calcDefense: function(damage){
+        return damage / (sag.user.defense / 33);
     },
     //GAME ----------------------------------------------------------------------------------------------------------------
     delta: 0,

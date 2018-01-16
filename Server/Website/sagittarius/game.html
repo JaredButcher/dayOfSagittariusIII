@@ -21,7 +21,7 @@
     <h1 class="gridSpan">Make new game</h1>
     <label>Name: </label><input id="mgName" type="text" />
     <label>Max Players(2-12): </label><input id="mgPlayers" type="number"  min="2" max="12"/>
-    <label>Fleet Size(100-1000000): </label><input id="mgFleet" type="number"  min="100" max="1000000"/>
+    <label>Damage Percentage(1-10000): </label><input id="mgDamage" type="number"  min="1" max="10000"/>
     <label>Ship Points(0-400): </label><input id="mgPoints" type="number"  min="0" max="400"/>
     <button style="grid-column: 2;" onclick="interface.makeGame();">Create Game</button>
 </div>
@@ -30,7 +30,7 @@
         <h1 class="gridSpan" id="glName"></h1>
         <p id="glPlayers"></p>
         <p id="glOwner"></p>
-        <p id="glFleetSize"></p>
+        <p id="glDamage"></p>
         <button id="glReady" onclick="interface.playerReady();">Ready</button>
     </div><div class="gridContainer" id="stats">
         <p class="gridSpan" id="glFleetPoints"></p>
@@ -39,7 +39,7 @@
         <label>Speed: </label><input id="glSpeed" type="number" oninput='interface.setStat("Speed");' min="0" max="400"/>
         <label>Scout: </label><input id="glScout" type="number" oninput='interface.setStat("Scout");' min="0" max="400"/>
     </div><div>
-        <select id="priSel">
+        <select id="priSel" onchange='interface.weapon("pri");'>
             <option value="laser">Laser</option>
             <option value="plasma">Plasma Cannon</option>
             <option value="rail">Rail Gun</option>
@@ -48,9 +48,9 @@
             <option value="jump">Tatical Jump</option>
             <option value="repair">Repair Team</option>
         </select>
-        <p id="priDam"></p><p id="priRange"></p><p id="priLimit"></p><p id="priDisc"></p>
+        <p id="priDam">Damage</p><p id="priRange">Range</p><p id="priAmmo">Ammo</p><p id="priDesc">Discription</p>
     </div><div>
-        <select id="secSel">
+        <select id="secSel" onchange='interface.weapon("sec");'>
             <option value="laser">Laser</option>
             <option value="plasma">Plasma Cannon</option>
             <option value="rail">Rail Gun</option>
@@ -59,7 +59,7 @@
             <option value="jump">Tatical Jump</option>
             <option value="repair">Repair Team</option>
         </select>
-        <p id="secDam"></p><p id="secRange"></p><p id="secLimit"></p><p id="secDisc"></p>
+        <p id="secDam">Damage</p><p id="secRange">Range</p><p id="secAmmo">Ammo</p><p id="secDesc">Discription</p>
     </div>
     <div id="glPlayerInfo"></div>
 </div>

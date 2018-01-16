@@ -87,7 +87,7 @@ class client:
                         sagGame = None
                         try:
                             sagGame = dataStor.makeSagGame(self.user, gameB[game.name.value][:30], int(gameB[game.maxPlayers.value]),
-                            int(gameB[game.shipSize.value]), int(gameB[game.shipPoints.value]))
+                            int(gameB[game.damage.value]), int(gameB[game.shipPoints.value]))
                         except ValueError:
                             sagGame = None
                         if sagGame is None:
@@ -177,7 +177,7 @@ class game(Enum):
     name = "4"
     owner = "5"
     maxPlayers = "6"
-    shipSize = "7"
+    damage = "7"
     shipPoints = "8"
     mode = "9"
     teams = "10"
@@ -225,7 +225,7 @@ class weapon(Enum):
     plazma = "5"
     emc = "6"
     jump = "7"
-    point = "8"
+    repair = "8"
 @unique
 class chatContext(Enum):
     free = "0"

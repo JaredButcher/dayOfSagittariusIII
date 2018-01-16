@@ -15,9 +15,12 @@ class gameMap:
         info[sockServer.gameMap.width.value] = self.width
         return info
 
+class sagConst:
+    ships = 15000
+
 class sagGame:
     UPDATE_RATE = 30 #Game updates per second, goal 30 min 10
-    def __init__(self, data, id, owner, name, size, ships, points, teams = 2, mode = 1, map=gameMap(1000, 1000)):
+    def __init__(self, data, id, owner, name, size, damage, points, teams = 2, mode = 1, map=gameMap(1000, 1000)):
         self.dataStor = data
         self.players = []
         self.transforms = []
@@ -26,8 +29,8 @@ class sagGame:
         self.owner = owner
         self.name = name;
         self.maxPlayers = size
-        self.shipSize = ships
         self.shipPoints = points
+        self.damage = damage
         self.teams = []
         for i in range(0, min(4, max(2, teams))): self.teams.append(team(i))
         self.mode = mode
@@ -53,7 +56,7 @@ class sagGame:
         self.send(player.updateBase(player.getBrowserInfo()))
         return True
     def addUser(self, user):
-        return self.addPlayer(player(user, self.shipSize))
+        return self.addPlayer(player(user))
     def userLeft(self, user):
         print("userLeft")
         if not self.running: #Remove player if game hasn't started, but keep if it has
@@ -88,7 +91,7 @@ class sagGame:
         info[sockServer.game.name.value] = self.name
         info[sockServer.game.owner.value] = self.owner.getName()
         info[sockServer.game.maxPlayers.value] = self.maxPlayers
-        info[sockServer.game.shipSize.value] = self.shipSize
+        info[sockServer.game.damage.value] = self.damage
         info[sockServer.game.shipPoints.value] = self.shipPoints
         info[sockServer.game.mode.value] = self.mode
         info[sockServer.game.teams.value] = len(self.teams)
@@ -110,8 +113,8 @@ class sagGame:
                 if sockServer.game.maxPlayers.value in info:
                     self.maxPlayers = int(info[sockServer.game.maxPlayers.value])
                     sendInfo = True
-                if sockServer.game.shipSize.value in info:
-                    self.shipSize = int(info[sockServer.game.shipSize.value])
+                if sockServer.game.damage.value in info:
+                    self.damage = int(info[sockServer.game.damage.value])
                     sendInfo = True
                 if sockServer.game.shipPoints.value in info:
                     self.shipPoints = int(info[sockServer.game.shipPoints.value])
@@ -157,9 +160,9 @@ class sagGame:
         if self.maxPlayers is None:
             self.maxPlayers = 6
         self.maxPlayers = min(12, max(2, self.maxPlayers))
-        if self.shipSize is None:
-            self.shipSize = 10000
-        self.shipSize = min(1000000, max(1, self.shipSize))
+        if self.damage is None:
+            self.damage = 100
+        self.damage = min(10000, max(1, self.damage))
         if self.shipPoints is None:
             self.shipPoints = 200
         self.shipPoints = min(400, max(0, self.shipPoints))
@@ -171,7 +174,7 @@ class player:
     BASE_RANGE = 100
     BASE_ATTACK = 1
     BASE_DEFENSE = 1
-    def __init__(self, user, ships):
+    def __init__(self, user):
         self.user = user
         self.wepPri = None
         self.wepSec = None
@@ -183,8 +186,8 @@ class player:
         self.scout = 0
         self.fleets = []
         self.scouts = []
-        self.ships = ships
         self.team = None
+        self.ships = sagConst.ships
     def setGame(self, game, id):
         self.user.game = game
         self.game = game
