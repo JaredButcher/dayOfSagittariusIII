@@ -174,6 +174,12 @@ class player:
     BASE_RANGE = 100
     BASE_ATTACK = 1
     BASE_DEFENSE = 1
+    MOD_SPEED = 5
+    MOD_TRAV = math.pi / 50
+    MOD_ATTACK = 1
+    MOD_DEFENSE = 2/3
+    MOD_SCOUTS = 5
+    MOD_RANGE = 1
     def __init__(self, user):
         self.user = user
         self.wepPri = None
@@ -221,7 +227,7 @@ class player:
         for fleet in self.fleets: fleet.update(delta)
         for scout in self.scouts: scout.update(delta)
     def makeFleet(self, size, pos, rot):
-        nFleet = fleet(size, self, self.game.getNewId(), pos, rot, BASE_SPEED + self.speed / 10, BASE_TRAV + math.pi / 25 * self.speed, self.game.map)
+        nFleet = fleet(size, self, self.game.getNewId(), pos, rot, BASE_SPEED + self.speed / MOD_SPEED, BASE_TRAV + math.pi / MOD_TRAV * self.speed, self.game.map)
         self.fleets.append(nFleet)
         self.game.addTransform(nFleet)
         return nFleet
@@ -242,8 +248,8 @@ class player:
         for fleet in fleets:
             fleet.startMerge(point)   
     def makeScout(self, fleet, bound, pos):
-        if len(self.scouts) < 10 + math.floor(self.scout / 5):
-            scout = transform(self, self.game.getNewIdl(), fleet.pos, 0, scout, map)
+        if len(self.scouts) < 10 + math.floor(self.scout / MOD_SCOUTS):
+            scout = transform(self, self.game.getNewIdl(), fleet.pos, 0, BASE_SPEED + self.speed / MOD_SPEED, BASE_TRAV + math.pi / MOD_TRAV * self.speed, map)
             if bound:
                 fleet.addScout(scout)
     def rmTransform(self, transform):
@@ -418,7 +424,7 @@ class transform: #Base class for all gameobjects
         info[sockServer.transform.velocity.value] = {'x': self.vel[0], 'y': self.vel[1]}
         info[sockServer.transform.rVelocity.value] = self.rVel
     def inSpotingRange(self, transform):
-        return ((self.pos[0] - transform.pos[0])^2 + (self.pos[1] - transform.pos[1])^2)^.5 <= self.player.BASE_RANGE + self.player.scout
+        return ((self.pos[0] - transform.pos[0])^2 + (self.pos[1] - transform.pos[1])^2)^.5 <= player.BASE_RANGE + self.player.scout * player.MOD_RANGE
     def computeSpotting(self, transform=None):
         if transform is None:
             for team in player.game.teams:

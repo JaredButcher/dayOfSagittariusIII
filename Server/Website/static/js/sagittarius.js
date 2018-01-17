@@ -379,6 +379,10 @@ const interface = {
             }
             this.computePoints();
         }
+        document.getElementById("attackStats").innerText = "Damage: " + Math.round(100 + sag.user.attack / sag.consts.MOD_ATTACK) + "%";
+        document.getElementById("defenseStats").innerText = "Armor: " + Math.round(sag.user.defense * sag.consts.MOD_DEFENSE) + "%";
+        document.getElementById("speedStats").innerText = "Speed: " + Math.round((sag.consts.BASE_SPEED + sag.user.speed / sag.consts.MOD_SPEED) * 10) / 10 + " Traverse: " + Math.round((sag.consts.BASE_TRAV + sag.user.speed * sag.consts.MOD_TRAV) * 100) / 100;
+        document.getElementById("scoutStats").innerText = "View: " + Math.round(sag.consts.BASE_RANGE + sag.user.scout / sag.consts.MOD_RANGE) + " Scouts: " + Math.floor(sag.consts.BASE_SCOUTS + sag.user.scout / sag.consts.MOD_SCOUTS);
         if(sendStats){
             var playerInfo = {};
             playerInfo[network.player.attack] = sag.user.attack;
@@ -449,9 +453,9 @@ const interface = {
         } else {
             if("damage" in weapon){
                 if(sag.user.pri == sag.user.sec){
-                    damage.innerText = "Damage/sec: " + Math.round(sag.calcAttack(weapon.damage * 1.5, sag.consts.ships));
+                    damage.innerText = "Damage/sec: " + Math.round(sag.calcAttack(weapon.damage * 1.5, sag.consts.SHIPS));
                 } else {
-                    damage.innerText = "Damage/sec: " + Math.round(sag.calcAttack(weapon.damage, sag.consts.ships));
+                    damage.innerText = "Damage/sec: " + Math.round(sag.calcAttack(weapon.damage, sag.consts.SHIPS));
                 }
             }
             if("range" in weapon) range.innerText = "Range: " + weapon.range;
@@ -466,30 +470,30 @@ const interface = {
                 break;
                 case sag.weapon.repair:
                     if(sag.user.pri == sag.user.sec){
-                        ammo.innerText = "Supplies: " + weapon.ammo * sag.consts.ships * 2;
+                        ammo.innerText = "Supplies: " + weapon.ammo * sag.consts.SHIPS * 2;
                     } else {
-                        ammo.innerText = "Supplies: " + weapon.ammo * sag.consts.ships;
+                        ammo.innerText = "Supplies: " + weapon.ammo * sag.consts.SHIPS;
                     }
-                    damage.innerText = "Repair Speed: " + Math.round(-1 * weapon.damage * sag.consts.ships);
+                    damage.innerText = "Repair Speed: " + Math.round(-1 * weapon.damage * sag.consts.SHIPS);
                     desc.innerText = "Massive quanaties of nanobots directed by super computers are directed to repair minor damage, create and replace componets, or even recreate entire ships"
                 break;
                 case sag.weapon.missle:
                     if(sag.user.pri == sag.user.sec){
-                        ammo.innerText = "Ammo: " + weapon.ammo * sag.consts.ships * 2;
+                        ammo.innerText = "Ammo: " + weapon.ammo * sag.consts.SHIPS * 2;
                     } else {
-                        ammo.innerText = "Ammo: " + weapon.ammo * sag.consts.ships;
+                        ammo.innerText = "Ammo: " + weapon.ammo * sag.consts.SHIPS;
                     }
-                    damage.innerText = "Damage/volly: " + Math.round(sag.calcAttack(weapon.damage, sag.consts.ships));
+                    damage.innerText = "Damage/volly: " + Math.round(sag.calcAttack(weapon.damage, sag.consts.SHIPS));
                     range.hidden = true;
                     desc.innerText = "A set missle battery that launch powerful self guilded missles over a huge distance, they lose contact if the target is no longer spoted and can be shot down."
                 break;
                 case sag.weapon.rail:
                     if(sag.user.pri == sag.user.sec){
-                        ammo.innerText = "Ammo: " + weapon.ammo * sag.consts.ships * 2;
+                        ammo.innerText = "Ammo: " + weapon.ammo * sag.consts.SHIPS * 2;
                     } else {
-                        ammo.innerText = "Ammo: " + weapon.ammo * sag.consts.ships;
+                        ammo.innerText = "Ammo: " + weapon.ammo * sag.consts.SHIPS;
                     }
-                    damage.innerText = "Damage/volly: " + Math.round(sag.calcAttack(weapon.damage, sag.consts.ships));
+                    damage.innerText = "Damage/volly: " + Math.round(sag.calcAttack(weapon.damage, sag.consts.SHIPS));
                     range.hidden = true;
                     desc.innerText = "An electromagetic railgun that streches the length of the ship, it accurity launches powerful projectiles at excessive speeds to just about anywhere, even outside of sensor range."
                 break;
@@ -498,7 +502,7 @@ const interface = {
                         range.innerText = "Range: " + weapon.range * 1.5;
                     }
                     ammo.hidden = true;
-                    damage.innerText = "Damage/sec: " + weapon.damage * sag.consts.ships;
+                    damage.innerText = "Damage/sec: " + weapon.damage * sag.consts.SHIPS;
                     desc.innerText = "Massive arryes of sensors and antennas along with banks of quantam computes are used to acheive electronic superiority, while active it will double sensor range and destory enemy scout drones and missles within range."
                 break;
                 case sag.weapon.jump:
@@ -605,13 +609,25 @@ const sag = {
         }
     },
     consts: {
-        ships: 15000
+        SHIPS: 15000,
+        BASE_SPEED: 10,
+        BASE_TRAV: Math.PI / 4,
+        BASE_SCOUTS: 10,
+        BASE_RANGE: 100,
+        BASE_ATTACK: 1,
+        BASE_DEFENSE: 1,
+        MOD_SPEED: 5,
+        MOD_TRAV: Math.PI / 50,
+        MOD_ATTACK: 1,
+        MOD_DEFENSE: 2/3,
+        MOD_SCOUTS: 5,
+        MOD_RANGE: 1
     },
     calcAttack: function(base, ships){
-        return base * (1 + sag.user.attack / 100) * sag.gameInfo.damage / 100 * ships;
+        return base * (1 + sag.user.attack / sag.consts.MOD_ATTACK / 100) * sag.gameInfo.damage / 100 * ships;
     },
     calcDefense: function(damage){
-        return damage / (sag.user.defense / 33);
+        return damage / (sag.user.defense * sag.consts.MOD_DEFENSE);
     },
     //GAME ----------------------------------------------------------------------------------------------------------------
     delta: 0,

@@ -32,13 +32,7 @@
         <p id="glOwner"></p>
         <p id="glDamage"></p>
         <button id="glReady" onclick="interface.playerReady();">Ready</button>
-    </div><div class="gridContainer" id="stats">
-        <p class="gridSpan" id="glFleetPoints"></p>
-        <label>Attack: </label><input id="glAttack" type="number" oninput='interface.setStat("Attack");' min="0" max="400"/>
-        <label>Defense: </label><input id="glDefense" type="number" oninput='interface.setStat("Defense");' min="0" max="400"/>
-        <label>Speed: </label><input id="glSpeed" type="number" oninput='interface.setStat("Speed");' min="0" max="400"/>
-        <label>Scout: </label><input id="glScout" type="number" oninput='interface.setStat("Scout");' min="0" max="400"/>
-    </div><div>
+    </div><div id="priDiv">
         <select id="priSel" onchange='interface.weapon("pri");'>
             <option value="laser">Laser</option>
             <option value="plasma">Plasma Cannon</option>
@@ -49,7 +43,7 @@
             <option value="repair">Repair Team</option>
         </select>
         <p id="priDam">Damage</p><p id="priRange">Range</p><p id="priAmmo">Ammo</p><p id="priDesc">Discription</p>
-    </div><div>
+    </div><div id="secDiv">
         <select id="secSel" onchange='interface.weapon("sec");'>
             <option value="laser">Laser</option>
             <option value="plasma">Plasma Cannon</option>
@@ -60,8 +54,13 @@
             <option value="repair">Repair Team</option>
         </select>
         <p id="secDam">Damage</p><p id="secRange">Range</p><p id="secAmmo">Ammo</p><p id="secDesc">Discription</p>
-    </div>
-    <div id="glPlayerInfo"></div>
+    </div><div class="gridContainer" id="stats">
+        <p class="gridSpan" id="glFleetPoints"></p>
+        <label>Attack: </label><input id="glAttack" type="number" oninput='interface.setStat("Attack");' min="0" max="400"/><p id="attackStats"></p>
+        <label>Defense: </label><input id="glDefense" type="number" oninput='interface.setStat("Defense");' min="0" max="400"/><p id="defenseStats"></p>
+        <label>Speed: </label><input id="glSpeed" type="number" oninput='interface.setStat("Speed");' min="0" max="400"/><p id="speedStats"></p>
+        <label>Scout: </label><input id="glScout" type="number" oninput='interface.setStat("Scout");' min="0" max="400"/><p id="scoutStats"></p>
+    </div><div id="glPlayerInfo"></div>
 </div>
 <div id="game" hidden>
     <h1>Game</h1>

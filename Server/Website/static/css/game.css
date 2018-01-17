@@ -28,6 +28,7 @@ label, input{
     }
     #glPlayerInfo{
         width: auto;
+        order: 4;
     }
     #glReady{
         min-width: 100px;
@@ -35,17 +36,18 @@ label, input{
     }
     #stats{
         min-width: 300px;
+        height: 200px;
     }
     .gridContainer{
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
+        text-align: left;
     }
     .gridContainer > label{
         text-align: right;
         grid-column: 1;
     }
     .gridContainer > input{
-        text-align: left;
         grid-column: 2;
     }
     .gridSpan{
@@ -54,7 +56,7 @@ label, input{
     }
     .serverInfo{
         display: grid;
-        width: 600px;
+        width: 80%;
         background-color: lightgray;
         border-radius: 5px;
         border: 2px solid black; 
@@ -76,6 +78,9 @@ label, input{
         display: grid;
         grid-template-columns: 1fr 1fr;
     }
+    #priDiv { order: 2; }
+    #secDiv { order: 3; }
+    #stats { order: 1; }
 }
 @media only screen and (min-width: 1400px){
     #content{
@@ -85,4 +90,7 @@ label, input{
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
     }
+    #priDiv { order: 1; }
+    #secDiv { order: 2; }
+    #stats { order: 3; }
 }
