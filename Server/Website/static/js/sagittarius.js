@@ -45,19 +45,18 @@ const network = {
         id: "0",
         name: "1",
         team: "2",
-        fleets: "3", //[fleet]
-        scouts: "4", //[transform]
-        primary: "5", //weapon
-        primaryAmmo: "6",
-        secondary: "7", //weapon
-        secondaryAmmo: "8",
-        attack: "9",
-        defense: "10",
-        scout: "11",
-        speed: "12",
-        isFlagship: "13",
-        ships: "14",
-        delete: "15"},
+        gameObj: "3", //[fleets ]
+        primary: "4", //weapon
+        primaryAmmo: "5",
+        secondary: "6", //weapon
+        secondaryAmmo: "7",
+        attack: "8",
+        defense: "9",
+        scout: "10",
+        speed: "11",
+        isFlagship: "12",
+        ships: "13",
+        delete: "14"},
     transform: {
         id: "0",
         pos: "1", //{x,y}
@@ -68,9 +67,10 @@ const network = {
         rotV: "6", 
         hide: "7",
         destory: "8"},
-    fleet: {
+    gameObj: {
         size: "0",
-        transform: "1"},
+        type: "1",
+        transform: "2"},
     weapon: {
         laser: "0",
         missle: "1",
@@ -90,10 +90,18 @@ const network = {
         fire: "1",  //ammo used if applicatble
         target: "2", //transform
         split: "3", //Size of new fleet
-        merge: "4"},
+        merge: "4",
+        weapon: "5"},
     gameMap: {
         height: "0",
         width: "1"},
+    objType: {
+        fleet: "1",
+        scout: "2",
+        scoutMove: "3",
+        missle: "4",
+        plasma: "5",
+        rail: "6"},
     conn: new WebSocket("ws://" + window.location.hostname + ":8001/sagittarius"),
     send: function(reqObj) {
         if(!network.inited){
@@ -379,10 +387,10 @@ const interface = {
             }
             this.computePoints();
         }
-        document.getElementById("attackStats").innerText = "Damage: " + Math.round(100 + sag.user.attack / sag.consts.MOD_ATTACK) + "%";
+        document.getElementById("attackStats").innerText = "Damage: " + Math.round(100 + sag.user.attack * sag.consts.MOD_ATTACK * 100) + "%";
         document.getElementById("defenseStats").innerText = "Armor: " + Math.round(sag.user.defense * sag.consts.MOD_DEFENSE) + "%";
-        document.getElementById("speedStats").innerText = "Speed: " + Math.round((sag.consts.BASE_SPEED + sag.user.speed / sag.consts.MOD_SPEED) * 10) / 10 + " Traverse: " + Math.round((sag.consts.BASE_TRAV + sag.user.speed * sag.consts.MOD_TRAV) * 100) / 100;
-        document.getElementById("scoutStats").innerText = "View: " + Math.round(sag.consts.BASE_RANGE + sag.user.scout / sag.consts.MOD_RANGE) + " Scouts: " + Math.floor(sag.consts.BASE_SCOUTS + sag.user.scout / sag.consts.MOD_SCOUTS);
+        document.getElementById("speedStats").innerText = "Speed: " + Math.round((sag.consts.BASE_SPEED + sag.user.speed * sag.consts.MOD_SPEED) * 10) / 10 + " Traverse: " + Math.round((sag.consts.BASE_TRAV + sag.user.speed * sag.consts.MOD_TRAV) * 100) / 100;
+        document.getElementById("scoutStats").innerText = "View: " + Math.round(sag.consts.BASE_RANGE + sag.user.scout * sag.consts.MOD_RANGE) + " Scouts: " + Math.floor(sag.consts.BASE_SCOUTS + sag.user.scout * sag.consts.MOD_SCOUTS);
         if(sendStats){
             var playerInfo = {};
             playerInfo[network.player.attack] = sag.user.attack;
@@ -519,7 +527,15 @@ const interface = {
             interface.weapon("pri", false, true);
         }
         if(!noSend){
-            //TODO send weapons to server
+            var playerInfo = {};
+            playerInfo[network.player.primary] = sag.user.pri.id;
+            playerInfo[network.player.secondary] = sag.user.sec.id;
+            var gInfo = {};
+            gInfo[network.game.players] = [playerInfo];
+            var info = {};
+            info[network.field.action] = network.action.update;
+            info[network.field.game] = gInfo;
+            network.send(info)
         }
     }
 };
@@ -571,35 +587,42 @@ const sag = {
     weapon: {
         laser: {
             damage: 0.05,
-            range: 100
+            range: 100,
+            id: network.weapon.laser
         },
         plasma: {
             damage: 0.1,
             range: 100,
-            speed: 100
+            speed: 100,
+            id: network.weapon.plasma
         },
         rail: {
             damage: 0.05,
             ammo: 50,
-            speed: 250
+            speed: 250,
+            id: network.weapon.rail
         },
         missle: {
             damage: 0.1,
             ammo: 20,
-            speed: 50
+            speed: 50,
+            id: network.weapon.missle
         },
         ecm: {
             damage: 0.02,
             range: 200,
-            spotting: 2
+            spotting: 2,
+            id: network.weapon.ecm
         },
         jump: {
-            ammo: 10
+            ammo: 10,
+            id: network.weapon.jump
         },
         repair: {
             damage: -0.01,
             range: 100,
-            ammo: 1
+            ammo: 1,
+            id: network.weapon.repair
         },
         mine: {
 
@@ -613,18 +636,18 @@ const sag = {
         BASE_SPEED: 10,
         BASE_TRAV: Math.PI / 4,
         BASE_SCOUTS: 10,
-        BASE_RANGE: 100,
+        BASE_RANGE: 50,
         BASE_ATTACK: 1,
         BASE_DEFENSE: 1,
-        MOD_SPEED: 5,
+        MOD_SPEED: .2,
         MOD_TRAV: Math.PI / 50,
-        MOD_ATTACK: 1,
+        MOD_ATTACK: .01,
         MOD_DEFENSE: 2/3,
-        MOD_SCOUTS: 5,
-        MOD_RANGE: 1
+        MOD_SCOUTS: .1,
+        MOD_RANGE: .5
     },
     calcAttack: function(base, ships){
-        return base * (1 + sag.user.attack / sag.consts.MOD_ATTACK / 100) * sag.gameInfo.damage / 100 * ships;
+        return base * (1 + sag.user.attack * sag.consts.MOD_ATTACK) * sag.gameInfo.damage / 100 * ships;
     },
     calcDefense: function(damage){
         return damage / (sag.user.defense * sag.consts.MOD_DEFENSE);
@@ -654,45 +677,39 @@ class player{
         this.name = "";
         this.team = sag.teams[0];
         this.ready = false;
-        this.fleets = [];
-        this.scouts = [];
+        this.gameObjs = [];
         document.getElementById("glPlayerInfo").innerHTML += '<div class="gridContainer, player" id="player'+ this.id +'"><p>Name: '+ this.name 
         +'</p>' + this.teamButton() + '<p>'+ this.ready +'</p></div>';
     }
     update(info={}){
         if(info[network.player.name] != null) this.name = info[network.player.name];
         if(info[network.player.team] != null) this.team = sag.teams[info[network.player.team]];
-        if(info[network.player.fleets] != null){
-            for(var i = 0; i < info[network.player.fleets].length; i++){
+        if(info[network.player.gameObj] != null){
+            for(var i = 0; i < info[network.player.gameObj].length; i++){
                 var unfound = true;
                 for(var j = 0; j < this.fleets.length; j++){
-                    if(this.fleets[j].id == info[network.player.fleets][i][network.fleet.transform][network.transform.id]){
+                    if(this.gameObj[j].id == info[network.player.gameObj][i][network.gameObj.transform][network.transform.id]){
                         unfound = false;
-                        this.fleets[j].update(info[network.player.fleets][i]);
+                        this.gameObj[j].update(info[network.player.gameObj][i]);
                         break;
                     }
                 }
                 if(unfound){
-                    var unit = new fleet(info[network.player.fleets][i][network.fleet.transform][network.transform.id], this);
-                    unit.update(info[network.player.fleets][i]);
-                    this.fleets.push(unit);
-                }
-            }
-        }
-        if(info[network.player.scouts] != null){
-            for(var i = 0; i < info[network.player.scouts].length; i++){
-                var unfound = true;
-                for(var j = 0; j < this.scouts.length; j++){
-                    if(this.scouts[j].id == info[network.player.scouts][i][network.transform.id]){
-                        unfound = false;
-                        this.scouts[j].update(info[network.player.scouts][i]);
+                    var unit;
+                    switch(info[network.player.gameObj][i][network.gameObj.type]){
+                        case network.objType.fleet:
+                            unit = new fleet(info[network.player.gameObj][i][network.gameObj.transform][network.transform.id], this);
+                        break;
+                        case network.objType.scout:
+                            unit = new scout(info[network.player.gameObj][i][network.gameObj.transform][network.transform.id], this);
+                        break;
+                        //TODO add rest of types
+                        default:
+                            unit = new transform(info[network.player.gameObj][i][network.gameObj.transform][network.transform.id], this);
                         break;
                     }
-                }
-                if(unfound){
-                    var unit = new transform(info[network.player.scouts][i][network.transform.id], this);
-                    unit.update(info[network.player.scouts][i]);
-                    this.scouts.push(unit);
+                    unit.update(info[network.player.gameObj][i]);
+                    this.gameObj.push(unit);
                 }
             }
         }
@@ -729,10 +746,12 @@ class transform{
 };
 class fleet extends transform{
     constructor(id, player){
-        this.id = id;
-        this.player = player
+        super.transform(id, player);
     }
     update(info){
-        super.update(info[network.fleet.transform])
+        super.update(info[network.gameObj.transform]);
     }
+};
+class scout extends transform{
+
 };

@@ -168,6 +168,8 @@ class sagGame:
         self.shipPoints = min(400, max(0, self.shipPoints))
 
 class player:
+    #TODO Rework scout
+    #TODO Add weapons list
     BASE_SPEED = 10
     BASE_TRAV = math.pi / 4
     BASE_SCOUTS = 10
@@ -190,8 +192,7 @@ class player:
         self.defense = 0
         self.speed = 0
         self.scout = 0
-        self.fleets = []
-        self.scouts = []
+        self.gameObjs = []
         self.team = None
         self.ships = sagConst.ships
     def setGame(self, game, id):
@@ -204,31 +205,22 @@ class player:
     def getUpdate(self, transforms = None):
         out = {}
         out[sockServer.player.ships.value] = self.ships
-        out[sockServer.player.fleets.value] = []
-        out[sockServer.player.scouts.value] = []
+        out[sockServer.player.gameObj.value] = []
         if transforms != None:
             for transform in transforms:
-                if type(transform) is fleet:
-                    out[sockServer.player.fleets.value].append(transform.getUpdate())
-                else:
-                    out[sockServer.player.scouts.value].append(transform.getUpdate())
+                out[sockServer.player.gameObj.value].append(transform.getUpdate())
         else:
-            for fleet in self.fleets:
-                out[sockServer.player.fleets.value].append(fleet.getUpdate())
-            for scout in self.scouts:
-                out[sockServer.player.scouts.value].append(scout.getUpdate())
+            for transform in self.gameObjs:
+                out[sockServer.player.gameObj.value].append(transform.getUpdate())
         return out
     def clearUpdate(self):
-        for fleet in self.fleets:
-            fleet.updateInfo = {}
-        for scout in self.scouts:
-            scout.updateInfo = {}
+        for transform in self.gameObjs:
+            transform.updateInfo = {}
     def update(self, delta):
-        for fleet in self.fleets: fleet.update(delta)
-        for scout in self.scouts: scout.update(delta)
+        for transform in self.gameObjs: transform.update(delta)
     def makeFleet(self, size, pos, rot):
         nFleet = fleet(size, self, self.game.getNewId(), pos, rot, BASE_SPEED + self.speed / MOD_SPEED, BASE_TRAV + math.pi / MOD_TRAV * self.speed, self.game.map)
-        self.fleets.append(nFleet)
+        self.transform.append(nFleet)
         self.game.addTransform(nFleet)
         return nFleet
     def makeSubFleet(self, pFleet, size):
@@ -249,7 +241,9 @@ class player:
             fleet.startMerge(point)   
     def makeScout(self, fleet, bound, pos):
         if len(self.scouts) < 10 + math.floor(self.scout / MOD_SCOUTS):
-            scout = transform(self, self.game.getNewIdl(), fleet.pos, 0, BASE_SPEED + self.speed / MOD_SPEED, BASE_TRAV + math.pi / MOD_TRAV * self.speed, map)
+            scout = scout(self, self.game.getNewIdl(), fleet.pos, BASE_SPEED + self.speed / MOD_SPEED, pos, map)
+            self.gameObjs.append(scout)
+            self.game.addTransform(scout)
             if bound:
                 fleet.addScout(scout)
     def rmTransform(self, transform):
@@ -259,20 +253,12 @@ class player:
                 while True:
                     try: team.spoting.remove(transform)
                     except ValueError: break
-        try: self.fleets.remove[transform]
-        except ValueError:
-            try:
-                self.scouts.remove[transform]
-                for fleet in fleets:
-                    fleet.rmScout(transform)
-            except ValueError: pass
     def getInfo(self, statsOnly=False):
         info = {}
         info[sockServer.player.id.value] = self.id
         info[sockServer.player.name.value] = self.user.getName()
         if self.team: info[sockServer.player.team.value] = self.team.number
-        info[sockServer.player.fleets.value] = []
-        info[sockServer.player.scouts.value] = []
+        info[sockServer.player.gameObj.value] = []
         info[sockServer.player.primary.value] = self.wepPri
         info[sockServer.player.primaryAmmo.value] = self.wepPriAmmo
         info[sockServer.player.secondary.value] = self.wepSec
@@ -283,13 +269,8 @@ class player:
         info[sockServer.player.speed.value] = self.speed
         info[sockServer.player.isFlagship.value] = False
         if not statsOnly:
-            for fleet in self.fleets:
-                fInfo = {}
-                fInfo[sockServer.fleet.size.value] = fleet.size
-                fInfo[sockServer.fleet.transform.value] = fleet.transform.getInfo()
-                info[sockServer.player.fleets.value].append(fInfo)
-            for scout in self.scouts:
-                info[sockServer.player.scouts.value].append(scout.transform.getInfo())
+            for gameObj in self.gameObjs:
+                info[sockServer.player.gameObj.value].append(gameObj.getInfo())
         return info;
     def getBrowserInfo(self):
         info = {}
@@ -314,7 +295,7 @@ class player:
             self.game.owner = self.game.players[0].user
         if self.team: self.team.players.remove(self)
         self.team = None
-        for transform in self.fleets + self.scouts:
+        for transform in self.gameObjs:
             transform.destory()
         self.game = None
     def recUpdate(self, info):
@@ -468,7 +449,7 @@ class transform: #Base class for all gameobjects
             if self.pos != self.targtPos: message[sockServer.transform.targtPos.value] = {'x': self.targtPos[0], 'y': self.targtPos[1]}
             if self.rot != self.targetRot: message[sockServer.transform.targetRot.value] = self.targetRot
         info = player.updateBase()
-        info[sockServer.field.game.value][sockServer.game.players.value][0][sockServer.player.scouts.value] = [message]
+        info[sockServer.field.game.value][sockServer.game.players.value][0][sockServer.player.gameObj.value] = [message]
         return info
     def send(self, info):
         self.player.team.send(info)
@@ -482,7 +463,7 @@ class fleet(transform):
         self.size = size
         self.scouts = []
         self.merging = None
-        super().__init__(game, pos, rot, maxSpeed, trav, map)
+        super().__init__(player, id, position, rot, speed, traverse, map)
     def goTo(target):
         self.merging = None
         super().goTo(pos)
@@ -511,16 +492,21 @@ class fleet(transform):
         super().update(time)
     def getUpdate(self):
         out = {}
-        out[sockServer.fleet.size.value] = self.size
-        out[sockServer.fleet.transform.value] = super().getUpdate
+        out[sockServer.gameObj.size.value] = self.size
+        out[sockServer.gameObj.transform.value] = super().getUpdate
         return out
-    def updateBase(self, message = {sockServer.fleet.transform.value: {}}, sendPos = False):
-        if message[sockServer.fleet.transform.value] is None:
-            message[sockServer.fleet.transform.value] = {}
-        message[sockServer.fleet.transform.value] = super.updateBase(message, sendPos)
+    def updateBase(self, message = {sockServer.gameObj.transform.value: {}}, sendPos = False):
+        if message[sockServer.gameObj.transform.value] is None:
+            message[sockServer.gameObj.transform.value] = {}
+        message[sockServer.gameObj.transform.value] = super.updateBase(message[sockServer.gameObj.transform.value], sendPos)
         info = player.updateBase()
-        info[sockServer.field.game.value][sockServer.game.players.value][0][sockServer.player.fleets.value] = [message]
+        info[sockServer.field.game.value][sockServer.game.players.value][0][sockServer.player.gameObj.value] = [message]
         return info
+
+class scout(transform):
+    def __init__(self, player, id, position, speed, map, destination):
+        #TODO desnitaion stuff
+        super().__init__(player, id, pos, 0, speed, 0, map)
 
 class team:
     def __init__(self, number):

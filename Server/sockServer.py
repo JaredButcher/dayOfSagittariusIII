@@ -187,19 +187,18 @@ class player(Enum):
     id = "0"
     name = "1"
     team = "2"
-    fleets = "3" #[fleet]
-    scouts = "4" #[transform]
-    primary = "5" #weapon
-    primaryAmmo = "6"
-    secondary = "7" #weapon
-    secondaryAmmo = "8"
-    attack = "9"
-    defense = "10"
-    scout = "11"
-    speed = "12"
-    isFlagship = "13"
-    ships = "14"
-    delete = "15"
+    gameObj = "3" #[gameObj]
+    primary = "4" #weapon
+    primaryAmmo = "5"
+    secondary = "6" #weapon
+    secondaryAmmo = "7"
+    attack = "8"
+    defense = "9"
+    scout = "10"
+    speed = "11"
+    isFlagship = "12"
+    ships = "13"
+    delete = "14"
 @unique
 class transform(Enum):
     id = "0"
@@ -212,9 +211,10 @@ class transform(Enum):
     hide = "7"
     destory = "8"
 @unique
-class fleet(Enum):
+class gameObj(Enum):
     size = "0"
-    transform = "1" #transform
+    type = "1"
+    transform = "2" #transform
 @unique
 class weapon(Enum):
     lazer = "0"
@@ -238,7 +238,16 @@ class command(Enum):
     target = "2" #transform
     split = "3" #Size of new fleet
     merge = "4" #[transform]
+    weapon = "5"
 @unique
 class gameMap(Enum):
     height = "0"
     width = "1"
+@unique
+class objType(Enum):
+        fleet = "1"
+        scout = "2"
+        scoutMove = "3"
+        missle = "4"
+        plasma = "5"
+        rail = "6"
