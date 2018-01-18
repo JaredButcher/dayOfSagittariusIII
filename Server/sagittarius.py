@@ -356,19 +356,30 @@ class transform: #Base class for all gameobjects
         self.map = map
         self.spoting = []
         self.spoted = []
-        self.spotingComputed = False
+        self.viewing = False
+        self.moveTurning = False
         self.updateInfo = {}
-    def goTo(self, target):
+    def goTo(self, target, turn=True):
         self.targtPos[0] = min(self.map.width, max(0, target[0]))
         self.targtPos[1] = min(self.map.height, max(0, target[1]))
         adTarg = target[0] - self.pos[0], target[1] - self.pos[1]
-        vel = (adTarg[0]^2 + adTarg[1]^2)^.5 / self.speed
+        distance = (adTarg[0]^2 + adTarg[1]^2)^.5
+        unitTarg = adTarg[0] / distance, adTarg[1] / distance
+        direction = (math.acos(unitTarg[0]) if unitTarg > 0 else 2 * math.pi - math.acos(unitTarg[0])) % (2 * math.pi)
+        if direction == self.rot:
+            vel = self.speed
+        else:
+            vel = self.speed / 2
+            if turn: 
+                self.turnTo(direction, True)
+                self.moveTurning = True
         self.vel = adTarg[0] / vel, adTarg[1] / vel
-        self.send(self.updateBase(sendPos = True))       
-    def turnTo(self, rotation):
+        self.send(self.updateBase(sendPos = True))
+    def turnTo(self, rotation, noSend=False):
         self.targetRot = rotation
         self.rVel = self.trav * (1 if self.rot > math.pi * 2 - self.rot else -1)
-        self.send(self.updateBase(sendPos = True))
+        self.moveTurning = False
+        if not noSend: self.send(self.updateBase(sendPos = True))
     def update(self, time):
         self.spottingComputed = False
         if(self.rot != self.targetRot):
@@ -378,6 +389,10 @@ class transform: #Base class for all gameobjects
             if min(self.rot, math.pi * 2 - self.rot) < abs(self.rVel): #Check if it overshot
                 self.rot = self.targetRot
                 self.rVel = 0
+        elif self.moveTurning:
+            self.vel[0] *= 2
+            self.vel[1] *= 2
+            self.moveTurning = False
         if(self.pos != self.targtPos):
             self.updateInfo = {}
             self.changePos = True
@@ -407,26 +422,27 @@ class transform: #Base class for all gameobjects
     def inSpotingRange(self, transform):
         return ((self.pos[0] - transform.pos[0])^2 + (self.pos[1] - transform.pos[1])^2)^.5 <= player.BASE_RANGE + self.player.scout * player.MOD_RANGE
     def computeSpotting(self, transform=None):
-        if transform is None:
-            for team in player.game.teams:
-                if team != player.team:
-                    for player in team.players:
-                        for transform in player.fleets + player.scouts:
-                            spot = inSpotingRange(transform)
-                            if spot and not transform in self.spoting:
-                                self.addSpot(transform)
-                                transform.computeSpotting(self)
-                            elif not spot and transform in self.spoting:
-                                self.rmSpot(transform)
-                                transform.computeSpotting(self)
-                            elif transform in self.spoted:
-                                transform.computeSpotting(self)
-        else:
-            spot = inSpotingRange(transform)
-            if spot and not transform in self.spoting:
-                self.addSpot(transform)
-            elif not spot and transform in self.spoting:
-                self.rmSpot(transform)
+        if self.viewing:
+            if transform is None:
+                for team in player.game.teams:
+                    if team != player.team:
+                        for player in team.players:
+                            for transform in player.gameObjs:
+                                spot = inSpotingRange(transform)
+                                if spot and not transform in self.spoting:
+                                    self.addSpot(transform)
+                                    transform.computeSpotting(self)
+                                elif not spot and transform in self.spoting:
+                                    self.rmSpot(transform)
+                                    transform.computeSpotting(self)
+                                elif transform in self.spoted:
+                                    transform.computeSpotting(self)
+            else:
+                spot = inSpotingRange(transform)
+                if spot and not transform in self.spoting:
+                    self.addSpot(transform)
+                elif not spot and transform in self.spoting:
+                    self.rmSpot(transform)
     def addSpot(transform):
         self.spoting.append(transform)
         transform.spoted.append(self)
@@ -460,10 +476,11 @@ class transform: #Base class for all gameobjects
 
 class fleet(transform):
     def __init__(self, size, player, id, position, rotaion, speed, traverse, map):
+        super().__init__(player, id, position, rot, speed, traverse, map)
         self.size = size
         self.scouts = []
         self.merging = None
-        super().__init__(player, id, position, rot, speed, traverse, map)
+        self.viewing = True
     def goTo(target):
         self.merging = None
         super().goTo(pos)
@@ -493,6 +510,7 @@ class fleet(transform):
     def getUpdate(self):
         out = {}
         out[sockServer.gameObj.size.value] = self.size
+        out[sockServer.gameObj.type.value] = sockServer.objType.fleet.value
         out[sockServer.gameObj.transform.value] = super().getUpdate
         return out
     def updateBase(self, message = {sockServer.gameObj.transform.value: {}}, sendPos = False):
@@ -507,6 +525,11 @@ class scout(transform):
     def __init__(self, player, id, position, speed, map, destination):
         #TODO desnitaion stuff
         super().__init__(player, id, pos, 0, speed, 0, map)
+    def getUpdate(self):
+        out = {}
+        out[sockServer.gameObj.type.value] = sockServer.objType.scout.value if self.viewing else sockServer.objType.scoutMove.value
+        out[sockServer.gameObj.transform.value] = super().getUpdate
+        return out
 
 class team:
     def __init__(self, number):
