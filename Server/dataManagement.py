@@ -36,6 +36,7 @@ class data:
     def getSagInfo(self):
         info = []
         for game in self.sagGames:
+            if game.running: continue
             info.append(game.getInfo(True))
         return info
     def getSagGame(self, id):
@@ -89,8 +90,10 @@ class user:
     def rmGame(self):
         with self.lock:
             if self.game != None:
-                self.game.userLeft(self)
+                game = self.game
                 self.game = None
+                game.userLeft(self)
+                
 
 
 #A poor and ineffecent unique random number generator

@@ -56,7 +56,8 @@ const network = {
         speed: "11",
         isFlagship: "12",
         ships: "13",
-        delete: "14"},
+        delete: "14",
+        ready: "15"},
     transform: {
         id: "0",
         pos: "1", //{x,y}
@@ -281,6 +282,7 @@ network.conn.onmessage = function (message) { //Receive and direct or process al
                             }
                         }
                     }
+                    if(info[network.game.running] == true) interface.scene(interface.scenes.game);
                     document.getElementById("glName").innerText = sag.gameInfo.name;
                     document.getElementById("glOwner").innerText = "Owner: " + sag.gameInfo.owner;
                     document.getElementById("glPlayers").innerText = "Players: " + sag.gameInfo.players.length + "/" + sag.gameInfo.maxPlayers;
@@ -537,6 +539,26 @@ const interface = {
             info[network.field.game] = gInfo;
             network.send(info)
         }
+    },
+    playerReady: function(){
+        sag.user.player.ready = !sag.user.player.ready;
+        user = {};
+        user[network.player.ready] = sag.user.player.ready;
+        game = {};
+        game[network.game.players] = [user];
+        req = {};
+        req[network.field.action] = network.action.update;
+        req[network.field.game] = game;
+        network.send(req);
+        this.readyUpdate();
+    },
+    readyUpdate: function(){
+        var button = document.getElementById("glReady");
+        if(sag.user.player.ready){
+            button.style.backgroundColor = "gray";
+        } else {
+            button.style.backgroundColor = "";
+        }
     }
 };
 const sag = {
@@ -548,7 +570,6 @@ const sag = {
         defense: 0,
         speed: 0,
         scout: 0,
-        fleets: [],
         pri: 0,
         sec: 0
     },
@@ -662,13 +683,13 @@ const sag = {
         }
         delta = timestamp - lastFrameTime;
         if(delta < 1 / MAX_FRAMERATE){
-            requestAnimationFrame(gameLoop)
+            requestAnimationFrame(loop)
             return
         }
         lastFrameTime = delta;
         //Update, draw
         
-        requestAnimationFrame(gameLoop)
+        requestAnimationFrame(loop)
     }
 };
 class player{
@@ -684,6 +705,7 @@ class player{
     update(info={}){
         if(info[network.player.name] != null) this.name = info[network.player.name];
         if(info[network.player.team] != null) this.team = sag.teams[info[network.player.team]];
+        if(info[network.player.ready] != null) this.ready = info[network.player.ready];
         if(info[network.player.gameObj] != null){
             for(var i = 0; i < info[network.player.gameObj].length; i++){
                 var unfound = true;
@@ -713,7 +735,7 @@ class player{
                 }
             }
         }
-        document.getElementById('player'+ this.id).innerHTML = '<p>Name: '+ this.name +'</p>' + this.teamButton() + '<p>'+ this.ready +'</p>';
+        document.getElementById('player'+ this.id).innerHTML = '<p>Name: '+ this.name +'</p>' + this.teamButton() + '<p>Ready: '+ this.ready +'</p>';
         if(info[network.player.delete] != null) this.delete();
     }
     get id(){

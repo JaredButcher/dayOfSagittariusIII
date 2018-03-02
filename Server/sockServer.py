@@ -199,6 +199,7 @@ class player(Enum):
     isFlagship = "12"
     ships = "13"
     delete = "14"
+    ready = "15"
 @unique
 class transform(Enum):
     id = "0"

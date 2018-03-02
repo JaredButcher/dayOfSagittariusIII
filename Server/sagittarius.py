@@ -50,7 +50,7 @@ class sagGame:
     def recCommand(self, command):
         pass
     def addPlayer(self, player):
-        if len(self.players) >= self.maxPlayers: return False
+        if len(self.players) >= self.maxPlayers or self.running: return False
         player.setGame(self, self.getNewId())
         self.players.append(player)
         self.send(player.updateBase(player.getBrowserInfo()))
@@ -58,22 +58,23 @@ class sagGame:
     def addUser(self, user):
         return self.addPlayer(player(user))
     def userLeft(self, user):
-        print("userLeft")
         if not self.running: #Remove player if game hasn't started, but keep if it has
             player = self.findPlayer(user)
             if player != None:
                 player.destory()
         alive = False
         for player in self.players:
-            if player.user.getSock() != None: 
+            if player.user.getSock() != None and player.user.game == self: 
                 alive = True
                 break
         if not alive: self.destory()
+        self.checkReady()
     def destory(self):
         self.dataStor.sagGames.remove(self)
         self.running = False
         for player in self.players:
             player.user.game = None
+            player.destory()
     def addTransform(self, transform):
         self.transforms.append(transform)
         self.game.send(transform.updateBase())
@@ -148,8 +149,6 @@ class sagGame:
             for player in self.players: player.update(delta)
             for transform in self.transforms: 
                 if transform.changePos: transform.computeSpotting()
-            for team in self.teams:
-                team.sendUpdate()
     def send(self, info):
         for player in self.players:
             player.send(info)
@@ -166,6 +165,16 @@ class sagGame:
         if self.shipPoints is None:
             self.shipPoints = 200
         self.shipPoints = min(400, max(0, self.shipPoints))
+    def checkReady(self):
+        if self.running: return
+        for player in self.players:
+            print(player.ready)
+            if player.ready is False: return
+        self.running = True
+        info = self.updateBase()
+        info[sockServer.field.game.value] = self.getInfo(True)
+        self.send(info)
+        self.gameLoop.start()
 
 class player:
     #TODO Rework scout
@@ -195,6 +204,7 @@ class player:
         self.gameObjs = []
         self.team = None
         self.ships = sagConst.ships
+        self.ready = False
     def setGame(self, game, id):
         self.user.game = game
         self.game = game
@@ -268,6 +278,7 @@ class player:
         info[sockServer.player.scout.value] = self.scout
         info[sockServer.player.speed.value] = self.speed
         info[sockServer.player.isFlagship.value] = False
+        info[sockServer.player.ready.value] = self.ready
         if not statsOnly:
             for gameObj in self.gameObjs:
                 info[sockServer.player.gameObj.value].append(gameObj.getInfo())
@@ -299,7 +310,6 @@ class player:
             transform.destory()
         self.game = None
     def recUpdate(self, info):
-        send = False
         try:
             if self.game.running == False and sockServer.player.team.value in info:
                 teamInt = int(info[sockServer.player.team.value])
@@ -326,10 +336,14 @@ class player:
                 player.primary = info[sockServer.player.primary.value]
             if sockServer.player.secondary.value in info:
                 player.secondary = info[sockServer.player.secondary.value]
+            if sockServer.player.ready.value in info:
+                self.ready = info[sockServer.player.ready.value]
+                print("Ready")
+                self.user.game.checkReady()
         except (TypeError, ValueError):
             pass
         self.statLimit()
-        self.send(self.updateBase(self.getInfo(True)))
+        self.game.send(self.updateBase(self.getInfo(True)))
     def statCount(self):
         return self.attack + self.defense + self.speed + self.scout
     def statLimit(self):
