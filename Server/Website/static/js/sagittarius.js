@@ -334,6 +334,7 @@ const interface = {
             break;
             case this.scenes.game:
                 document.getElementById("game").hidden = false;
+                sag.startGame();
             break;
         }
         this.currentScene = current;
@@ -676,7 +677,23 @@ const sag = {
     //GAME ----------------------------------------------------------------------------------------------------------------
     delta: 0,
     lastFrameTime: 0,
-    MAX_FRAMERATE: 30, //TODO: find a reasonable number for this, 60 is goal
+    MAX_FRAMERATE: 30,
+    gl: null,
+    shaderProgramInfo: null,
+    vsSource: `
+        attribute vec4 aVertexPosition;
+
+        uniform mat4 uModelViewMatrix;
+        uniform mat4 uProjectionMatrix;
+
+        void main() {
+        gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
+        }`,
+    fsSource: `
+        void main() {
+          gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+        }
+      `,
     loop: function(timestamp){
         if(lastFrameTime == 0){
             lastFrameTime = timestamp;
@@ -690,6 +707,117 @@ const sag = {
         //Update, draw
         
         requestAnimationFrame(loop)
+    },
+    startGame: function() {
+        const canvas = document.getElementById('gameCanvas');
+        sag.gl = canvas.getContext('webgl');
+        if(!sag.gl){
+            alert("Unable to start webgl");
+            return null;
+        }
+        sag.gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        sag.gl.clear(sag.gl.COLOR_BUFFER_BIT);
+        this.initShaderProgram(sag.vsSource, sag.fsSource);
+        this.drawScene(this.initBuffer());
+    },
+    initShaderProgram: function(vsSource, fsSource){
+        const vertexShader = sag.loadShader(sag.gl.VERTEX_SHADER, vsSource);
+        const fragmentShader = sag.loadShader(sag.gl.FRAGMENT_SHADER, fsSource);
+
+        const shaderProgram = sag.gl.createProgram();
+        sag.gl.attachShader(shaderProgram, vertexShader);
+        sag.gl.attachShader(shaderProgram, fragmentShader);
+        sag.gl.linkProgram(shaderProgram);
+
+        if(!sag.gl.getProgramParameter(shaderProgram, sag.gl.LINK_STATUS)){
+            alert("Shader failed");
+            return null;
+        }
+        sag.shaderProgramInfo = {   
+            program: shaderProgram,
+            attribLocations: {
+                vertexPosition: sag.gl.getAttribLocation(shaderProgram, 'aVertexPosition')
+            },
+            uniformLocations: {
+                projectionMatrix: sag.gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
+                modelViewMatrix: sag.gl.getUniformLocation(shaderProgram, 'uModelViewMatrix')
+            }
+        };
+        return shaderProgram;
+    },
+    loadShader: function(type, source){
+        const shader = sag.gl.createShader(type);
+        sag.gl.shaderSource(shader, source);
+        sag.gl.compileShader(shader);
+
+        if(!sag.gl.getShaderParameter(shader, sag.gl.COMPILE_STATUS)){
+            alert("Shader compile failed: " + sag.gl.getShaderInfoLog(shader));
+            sag.gl.deleteShader(shader);
+            return null;
+        }
+        return shader;
+    },
+    initBuffer(){
+        const positionBuffer = sag.gl.createBuffer();
+
+        sag.gl.bindBuffer(sag.gl.ARRAY_BUFFER, positionBuffer);
+        const positions = [
+            1.0,  1.0,
+           -1.0,  1.0,
+            1.0, -1.0,
+           -1.0, -1.0,
+        ];
+        sag.gl.bufferData(sag.gl.ARRAY_BUFFER, 
+            new Float32Array(positions),
+            sag.gl.STATIC_DRAW
+        );
+
+        return {
+            position: positionBuffer
+        };
+    },
+    drawScene: function(buffers){
+        sag.gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        sag.gl.clearDepth(1.0);
+        sag.gl.enable(sag.gl.DEPTH_TEST);
+        sag.gl.depthFunc(sag.gl.LEQUAL)
+        sag.gl.clear(sag.gl.COLOR_BUFFER_BIT | sag.gl.DEPTH_BUFFER_BIT);
+
+        const projectionMatrix = mat4.create();
+        mat4.ortho(projectionMatrix, -1.0, 1.0, -1.0, 1.0, 0.1, 100);
+
+        const modelViewMatrix = mat4.create();
+        mat4.traslate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -6.0]);
+        {
+            sag.gl.bindBuffer(sag.gl.ARRAY_BUFFER, buffers.position);
+            sag.gl.vertexAttribPointer(
+                sag.shaderProgramInfo.attribLocations.vertexPosition,
+                2,
+                sag.gl.FLOAT,
+                false,
+                0,
+                0
+            );
+            sag.gl.enableVertexAttribArray(
+                sag.shaderProgramInfo.attribLocations.vertexPosition
+            );
+        }
+
+        sag.gl.useProgram(sag.shaderProgramInfo.program);
+
+        sag.gl.uniformMatrix4fv(
+            sag.shaderProgramInfo.uniformLocations.projectionMatrix,
+            false,
+            projectionMatrix
+        );
+        sag.gl.uniformMatrix4fv(
+            sag.shaderProgramInfo.uniformLocations.modelViewMatrix,
+            false,
+            modelViewMatrix
+        );
+        {
+            sag.gl.drawArray(sag.gl.TRIANGLE_STRIP, 0, 4);
+        }
     }
 };
 class player{
