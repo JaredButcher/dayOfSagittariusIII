@@ -678,148 +678,227 @@ const sag = {
     delta: 0,
     lastFrameTime: 0,
     MAX_FRAMERATE: 30,
-    gl: null,
-    shaderProgramInfo: null,
-    vsSource: `
-        attribute vec4 aVertexPosition;
-
-        uniform mat4 uModelViewMatrix;
-        uniform mat4 uProjectionMatrix;
-
-        void main() {
-        gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
-        }`,
-    fsSource: `
-        void main() {
-          gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-        }
-      `,
     loop: function(timestamp){
-        if(lastFrameTime == 0){
+        if(sag.lastFrameTime == 0){
             lastFrameTime = timestamp;
         }
-        delta = timestamp - lastFrameTime;
-        if(delta < 1 / MAX_FRAMERATE){
-            requestAnimationFrame(loop)
+        sag.delta = timestamp - sag.lastFrameTime;
+        if(sag.delta < 1 / sag.MAX_FRAMERATE){
+            requestAnimationFrame(sag.loop)
             return
         }
-        lastFrameTime = delta;
+        sag.lastFrameTime = sag.delta;
         //Update, draw
-        
-        requestAnimationFrame(loop)
+        render.draw();
+        render.update(sag.delta);
+        requestAnimationFrame(sag.loop)
     },
     startGame: function() {
-        const canvas = document.getElementById('gameCanvas');
-        sag.gl = canvas.getContext('webgl');
-        if(!sag.gl){
-            alert("Unable to start webgl");
-            return null;
-        }
-        sag.gl.clearColor(0.0, 0.0, 0.0, 1.0);
-        sag.gl.clear(sag.gl.COLOR_BUFFER_BIT);
-        this.initShaderProgram(sag.vsSource, sag.fsSource);
-        this.drawScene(this.initBuffer());
+        render.init();
+        render.objToDraw.push(new render.drawObj(render.gl, render.obj.testTrapazoid));
+        requestAnimationFrame(sag.loop);
     },
-    initShaderProgram: function(vsSource, fsSource){
-        const vertexShader = sag.loadShader(sag.gl.VERTEX_SHADER, vsSource);
-        const fragmentShader = sag.loadShader(sag.gl.FRAGMENT_SHADER, fsSource);
-
-        const shaderProgram = sag.gl.createProgram();
-        sag.gl.attachShader(shaderProgram, vertexShader);
-        sag.gl.attachShader(shaderProgram, fragmentShader);
-        sag.gl.linkProgram(shaderProgram);
-
-        if(!sag.gl.getProgramParameter(shaderProgram, sag.gl.LINK_STATUS)){
-            alert("Shader failed");
-            return null;
+    
+};
+const render = {
+    canvas: null,
+    gl: null,
+    programs: null,
+    obj: null,
+    objToDraw: [],
+    world: new Float32Array(16),
+    invWorld: new Float32Array(16),
+    view: new Float32Array(16),
+    projection: new Float32Array(16),
+    proViewWorld: new Float32Array(16),
+    vertVertShader: `
+        precision mediump float;
+        attribute vec3 vertPos;
+        attribute vec4 vertColor;
+        uniform vec4 color;
+        uniform vec3 position;
+        uniform mat4 trans;
+        uniform mat4 proViewWorld;
+        varying vec4 fragColor;
+        void main(){
+            fragColor = vertColor + color;
+            gl_Position = proViewWorld * trans * vec4(vertPos, 1.0) + vec4(position, 0.0);
         }
-        sag.shaderProgramInfo = {   
-            program: shaderProgram,
-            attribLocations: {
-                vertexPosition: sag.gl.getAttribLocation(shaderProgram, 'aVertexPosition')
-            },
-            uniformLocations: {
-                projectionMatrix: sag.gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
-                modelViewMatrix: sag.gl.getUniformLocation(shaderProgram, 'uModelViewMatrix')
+    `,
+    vertFragShader: `
+        precision mediump float;
+        varying vec4 fragColor;
+        void main(){
+            gl_FragColor = fragColor;
+        }
+    `,
+    init: () => {
+        render.canvas = document.getElementById('gameCanvas');
+        render.gl = render.canvas.getContext('webgl');
+        render.programs = {
+            vertColor: {
+                program: render.createProgram(render.gl, 
+                    render.createShader(render.gl, render.gl.VERTEX_SHADER, render.vertVertShader),
+                    render.createShader(render.gl, render.gl.FRAGMENT_SHADER, render.vertFragShader)),
+                attributes:[{
+                    loc: "vertPos",
+                    size: 3,
+                    type: render.gl.FLOAT,
+                    norm: render.gl.FALSE,
+                    stride: 7 * Float32Array.BYTES_PER_ELEMENT,
+                    offset: 0,
+                },{
+                    loc: "vertColor",
+                    size: 4,
+                    type: render.gl.FLOAT,
+                    norm: render.gl.FALSE,
+                    stride: 7 * Float32Array.BYTES_PER_ELEMENT,
+                    offset: 3 * Float32Array.BYTES_PER_ELEMENT,
+                }],
+                uniforms:{
+                    trans: null,
+                    proViewWorld: null,
+                    position: null,
+                    color: null
+                },
+                setUniforms: () => {
+                    var program = render.programs.vertColor;
+                    program.uniforms.trans = render.gl.getUniformLocation(program.program, 'trans');
+                    program.uniforms.proViewWorld = render.gl.getUniformLocation(program.program, 'proViewWorld');
+                    program.uniforms.position = render.gl.getUniformLocation(program.program, 'position');
+                    program.uniforms.color = render.gl.getUniformLocation(program.program, 'color');
+                }
             }
         };
-        return shaderProgram;
-    },
-    loadShader: function(type, source){
-        const shader = sag.gl.createShader(type);
-        sag.gl.shaderSource(shader, source);
-        sag.gl.compileShader(shader);
+        render.obj = {
+            testTrapazoid: {
+                program: render.programs.vertColor,
+                buffer: [
+                    -.5, .5, 0.0, 1.0, 0.0, 0.0, 1.0,
+                    -1.0, -.5, 0.0, 0.0, 1.0, 0.0, 1.0,
+                    1.0, -.5, 0.0, 0.0, 0.0, 1.0, 1.0,
+                    .5, .5, 0.0, 0.0, 0.0, 0.0, 0.0,
+                ],
+                indice: [
+                    0,1,3,
+                    1,2,3,
+                ]
+            }
+        };
 
-        if(!sag.gl.getShaderParameter(shader, sag.gl.COMPILE_STATUS)){
-            alert("Shader compile failed: " + sag.gl.getShaderInfoLog(shader));
-            sag.gl.deleteShader(shader);
-            return null;
+        render.gl.enable(render.gl.DEPTH_TEST);
+        render.gl.enable(render.gl.CULL_FACE);
+        render.gl.frontFace(render.gl.CCW);
+        render.gl.cullFace(render.gl.BACK);
+
+        for(var program in render.programs){
+            render.gl.useProgram(render.programs[program].program);
+            render.programs[program].setUniforms();
+        }
+
+        mat4.identity(render.world);
+        render.world[5] = render.canvas.width / 1000;
+        render.world[0] = render.canvas.height / 1000;
+        mat4.invert(render.invWorld, render.world);
+        mat4.lookAt(render.view, [0, 0, -1], [0, 0, 0], [0, 1, 0]);
+        mat4.ortho(render.projection, 1, -1, -1, 1, .1, 10);
+        mat4.multiply(render.proViewWorld, render.projection, render.view);
+        mat4.multiply(render.proViewWorld, render.proViewWorld, render.world);
+
+        
+    },
+    draw: () => {
+        render.gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        render.gl.clear(render.gl.COLOR_BUFFER_BIT | render.gl.DEPTH_BUFFER_BIT);
+        render.objToDraw.forEach((obj) => {
+            obj.draw();
+        });
+    },
+    update: (delta) => {
+        render.objToDraw.forEach((obj) => {
+            obj.update(delta);
+        });
+    },
+    createShader: (gl, type, source) => {
+        var shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        if(!gl.getShaderParameter(shader, gl.COMPILE_STATUS)){
+            console.error("Vertext shader compile error", gl.getShaderInfoLog(shader));
         }
         return shader;
     },
-    initBuffer(){
-        const positionBuffer = sag.gl.createBuffer();
-
-        sag.gl.bindBuffer(sag.gl.ARRAY_BUFFER, positionBuffer);
-        const positions = [
-            1.0,  1.0,
-           -1.0,  1.0,
-            1.0, -1.0,
-           -1.0, -1.0,
-        ];
-        sag.gl.bufferData(sag.gl.ARRAY_BUFFER, 
-            new Float32Array(positions),
-            sag.gl.STATIC_DRAW
-        );
-
-        return {
-            position: positionBuffer
-        };
-    },
-    drawScene: function(buffers){
-        sag.gl.clearColor(0.0, 0.0, 0.0, 1.0);
-        sag.gl.clearDepth(1.0);
-        sag.gl.enable(sag.gl.DEPTH_TEST);
-        sag.gl.depthFunc(sag.gl.LEQUAL)
-        sag.gl.clear(sag.gl.COLOR_BUFFER_BIT | sag.gl.DEPTH_BUFFER_BIT);
-
-        const projectionMatrix = mat4.create();
-        mat4.ortho(projectionMatrix, -1.0, 1.0, -1.0, 1.0, 0.1, 100);
-
-        const modelViewMatrix = mat4.create();
-        mat4.traslate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -6.0]);
-        {
-            sag.gl.bindBuffer(sag.gl.ARRAY_BUFFER, buffers.position);
-            sag.gl.vertexAttribPointer(
-                sag.shaderProgramInfo.attribLocations.vertexPosition,
-                2,
-                sag.gl.FLOAT,
-                false,
-                0,
-                0
-            );
-            sag.gl.enableVertexAttribArray(
-                sag.shaderProgramInfo.attribLocations.vertexPosition
-            );
+    createProgram: (gl, vShader, fShader) => {
+        var program = gl.createProgram();
+        gl.attachShader(program, vShader);
+        gl.attachShader(program, fShader);
+        gl.linkProgram(program);
+        if(!gl.getProgramParameter(program, gl.LINK_STATUS)){
+            console.error("Linker error", gl.getProgramInfoLog(program));
         }
+        return program;
+    },
+    drawObj: class {
+        constructor(gl, obj){
+            this.gl = gl;
+            this.obj = obj;
+            this.axis = [0, 0, 1];
+            this.pos = [0.0, 0.0, 0.0];
+            this.color = [0.0, 0.0, 0.0, 0.0];
+            this.trans = new Float32Array(16);
+            mat4.identity(this.trans);
+        }
+        draw(){
+            this.gl.useProgram(this.obj.program.program);
+            //Bind buffers
+            var buffer = this.gl.createBuffer();
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
+            this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.obj.buffer), this.gl.STATIC_DRAW);
+            buffer = this.gl.createBuffer();
+            this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, buffer);
+            this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.obj.indice), this.gl.STATIC_DRAW);
+            //Set attributes
+            var location = null;
+            var attrib = this.obj.program.attributes;
+            for(var i = 0; i < attrib.length; ++i){
+                location = this.gl.getAttribLocation(this.obj.program.program, attrib[i].loc);
+                this.gl.vertexAttribPointer(
+                    location,
+                    attrib[i].size,
+                    attrib[i].type,
+                    attrib[i].norm,
+                    attrib[i].stride,
+                    attrib[i].offset
+                );
+                this.gl.enableVertexAttribArray(location);
+            }
+            //Set uniforms
+            this.gl.uniform3fv(this.obj.program.uniforms.position, this.pos);
+            this.gl.uniformMatrix4fv(this.obj.program.uniforms.trans, this.gl.FALSE, this.trans);
+            this.gl.uniformMatrix4fv(this.obj.program.uniforms.proViewWorld, this.gl.FALSE, render.proViewWorld);
+            this.gl.uniform4fv(this.obj.program.uniforms.color, this.color);
+            //Draw
+            this.gl.drawElements(this.gl.TRIANGLES, this.obj.indice.length, this.gl.UNSIGNED_SHORT, 0);
+        }
+        update(delta){
 
-        sag.gl.useProgram(sag.shaderProgramInfo.program);
+        }
+        bindBuffersAttributes(){
 
-        sag.gl.uniformMatrix4fv(
-            sag.shaderProgramInfo.uniformLocations.projectionMatrix,
-            false,
-            projectionMatrix
-        );
-        sag.gl.uniformMatrix4fv(
-            sag.shaderProgramInfo.uniformLocations.modelViewMatrix,
-            false,
-            modelViewMatrix
-        );
-        {
-            sag.gl.drawArray(sag.gl.TRIANGLE_STRIP, 0, 4);
+        }
+        //abs set true to move absoutely on screen space
+        move(pos, time, abs = false){
+            
+        }
+        //abs set true to move absoutely on screen space
+        setPos(pos, abs = false){
+
+        }
+        transform(transform, time = 0){
+
         }
     }
-};
+}
 class player{
     constructor(id){
         this.id = id;

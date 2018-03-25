@@ -43,7 +43,8 @@ class HTTPHandler(BaseHTTPRequestHandler):
         "js": "application/javascript",
         "json": "application/json",
         "mp4": "video/mp4",
-        "ico": "image/x-icon"}
+        "ico": "image/x-icon",
+        "ts": "application/typescript"}
 
     def do_HEAD(self):
         self.send_response(200)
@@ -125,10 +126,12 @@ class HTTPHandler(BaseHTTPRequestHandler):
         self.sendCookies = False
         path = self.path[len("/"):]
         try:
+            print(path + str(path.rindex(".") + 1))
             fContent = self.readFile(path)
             self.mime = self.mimes[path[path.rindex(".") + 1:]]
             return fContent
-        except IOError:
+        except (IOError, KeyError) as e:
+            print("error: " + path)
             return self.cHome("error")
 
 
