@@ -68,7 +68,7 @@ class sagGame:
                 alive = True
                 break
         if not alive: self.destory()
-        self.checkReady()
+        if not self.running: self.checkReady()
     def destory(self):
         self.dataStor.sagGames.remove(self)
         self.running = False

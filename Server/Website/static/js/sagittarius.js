@@ -785,7 +785,8 @@ const render = {
                 ]
             }
         };
-
+        render.canvas.addEventListener("resize", render.resize);
+        render.resize();
         render.gl.enable(render.gl.DEPTH_TEST);
         render.gl.enable(render.gl.CULL_FACE);
         render.gl.frontFace(render.gl.CCW);
@@ -797,8 +798,8 @@ const render = {
         }
 
         mat4.identity(render.world);
-        render.world[5] = render.canvas.width / 1000;
-        render.world[0] = render.canvas.height / 1000;
+        render.world[0] = 100 / render.canvas.width;
+        render.world[5] = 100 / render.canvas.height;
         mat4.invert(render.invWorld, render.world);
         mat4.lookAt(render.view, [0, 0, -1], [0, 0, 0], [0, 1, 0]);
         mat4.ortho(render.projection, 1, -1, -1, 1, .1, 10);
@@ -806,6 +807,11 @@ const render = {
         mat4.multiply(render.proViewWorld, render.proViewWorld, render.world);
 
         
+    },
+    resize: () => {
+        render.canvas.height = render.canvas.clientHeight;
+        render.canvas.width = render.canvas.clientWidth;
+        render.gl.viewport(0, 0, render.gl.canvas.width, render.gl.canvas.height);
     },
     draw: () => {
         render.gl.clearColor(0.0, 0.0, 0.0, 1.0);
