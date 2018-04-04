@@ -305,7 +305,14 @@ const interface = {
     },
     currentScene: null,
     scene: function(current){ //Changes Scene
+        document.getElementsByClassName("navbar")[0].style.display = "inline-block";
+        if(document.getElementById("footer")){
+            document.getElementById("footer").hidden = false;
+        }
+        document.getElementById("startButtons").hidden = false;
+        document.getElementById("content").style.margin = "auto";
         document.getElementById("start").hidden = true;
+        document.getElementById("game").hidden = true;
         document.getElementById("makeGame").style.display = "none";
         document.getElementById("servers").hidden = true;
         document.getElementById("lobby").style.display = "none";
@@ -334,6 +341,8 @@ const interface = {
             break;
             case this.scenes.game:
                 document.getElementById("game").hidden = false;
+                document.getElementById("startButtons").hidden = true;
+                document.getElementById("content").style.margin = "0px";
                 sag.startGame();
             break;
         }
@@ -694,6 +703,8 @@ const sag = {
         requestAnimationFrame(sag.loop)
     },
     startGame: function() {
+        document.getElementsByClassName("navbar")[0].style.display = "none";
+        document.getElementById("footer").hidden = true;
         render.init();
         render.objToDraw.push(new render.drawObj(render.gl, render.obj.testTrapazoid));
         requestAnimationFrame(sag.loop);
@@ -785,8 +796,7 @@ const render = {
                 ]
             }
         };
-        render.canvas.addEventListener("resize", render.resize);
-        render.resize();
+        window.addEventListener('resize', render.resize, true);
         render.gl.enable(render.gl.DEPTH_TEST);
         render.gl.enable(render.gl.CULL_FACE);
         render.gl.frontFace(render.gl.CCW);
@@ -805,13 +815,17 @@ const render = {
         mat4.ortho(render.projection, 1, -1, -1, 1, .1, 10);
         mat4.multiply(render.proViewWorld, render.projection, render.view);
         mat4.multiply(render.proViewWorld, render.proViewWorld, render.world);
-
-        
+        render.resize();
     },
     resize: () => {
         render.canvas.height = render.canvas.clientHeight;
         render.canvas.width = render.canvas.clientWidth;
         render.gl.viewport(0, 0, render.gl.canvas.width, render.gl.canvas.height);
+        mat4.identity(render.world);
+        render.world[0] = 100 / render.canvas.width;
+        render.world[5] = 100 / render.canvas.height;
+        mat4.multiply(render.proViewWorld, render.projection, render.view);
+        mat4.multiply(render.proViewWorld, render.proViewWorld, render.world);
     },
     draw: () => {
         render.gl.clearColor(0.0, 0.0, 0.0, 1.0);
