@@ -174,7 +174,8 @@ class sagGame:
         info = self.updateBase()
         info[sockServer.field.game.value] = self.getInfo(True)
         self.send(info)
-        self.gameLoop.start()
+        if(not self.gameLoop.isAlive): #Might not be correct choose
+            self.gameLoop.start()
 
 class player:
     #TODO Rework scout

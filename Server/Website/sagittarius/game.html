@@ -65,16 +65,46 @@
 </div>
 <div id="game" hidden>
     <canvas id="gameCanvas"></canvas>
-    <div class="gameUi">
-        <div id="uiTopLeft">
-            <div id="uiTeam"></div>
-            <div id="uiChat"></div>
+    <div id="gameUi">
+        <div id="uiTeam">
+            <p>Jeff: 10000 / 10000</p>
+            <p>Longer Name: 10000 / 10000</p>
+            <p>Kitami: 10000 / 10000</p>
+            <p>Jeff: 10000 / 10000</p>
         </div>
         <div id="uiStatus">
+            <p>Fleet: 10000 / 10000</p>
+            <p>Attack: 100 Defense: 100</p>
+            <p>Speed: 100 Scout: 100</p>
+        </div>
+        <div id="uiChat">
+            <p>2Jeff: Stuff said and oather things and stuff potaot</p>
+            <p>1Jeff: Stuff said and oather things and stuff potaot</p>
+            <p>0Jeff: Stuff said and oather things and stuff potaot</p>
+            <p>9Jeff: Stuff said and oather things and stuff potaoto and more stuff and other things and another ithing this is slightly long</p>
+            <p>8Jeff: Stuff said and oather things and stuff potaoto and more stuff and other things and another ithing this is slightly long</p>
+            <p>7Jeff: Stuff said and oather things and stuff potaoto and more stuff and other things and another ithing this is slightly long</p>
+            <p>6Jeff: Stuff said and oather things and stuff potaoto and more stuff and other things and another ithing this is slightly long</p>
+            <p>5Jeff: Stuff said and oather things and stuff potaoto and more stuff and other things and another ithing this is slightly long</p>
+            <p>4Jeff: Stuff said and oather things and stuff potaoto and more stuff and other things and another ithing this is slightly long</p>
+            <p>3Jeff: Stuff said and oather things and stuff potaoto and more stuff and other things and another ithing this is slightly long</p>
+            <p>2Jeff: Stuff said and oather things and stuff potaoto and more stuff and other things and another ithing this is slightly long</p>
+            <p>1Jeff: Stuff said and oather things and stuff potaoto and more stuff and other things and another ithing this is slightly long</p>
+        </div>
+        <div id="uiEnemies">
+                <p>Jeff: 10000 / 10000</p>
+                <p>Longer Name: 10000 / 10000</p>
+                <p>Kitami: 10000 / 10000</p>
+                <p>Jeff: 10000 / 10000</p>
+                <p>Jeff: 10000 / 10000</p>
+                <p>Longer Name: 10000 / 10000</p>
+                <p>Kitami: 10000 / 10000</p>
+                <p>Jeff: 10000 / 10000</p>
+        </div>
+        <canvas id="uiMap"></canvas>
+        <div id="uiEsc" hidden>
             <input id="gameExit" type="button" value="Exit" onclick="interface.scene(interface.scenes.servers);"/>
         </div>
-        <div id="uiEnemies"></div>
-        <canvas id="uiMap"></canvas>
     </div>
 </div>
 <script>document.onload = interface.start();</script>
