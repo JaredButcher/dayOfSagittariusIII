@@ -65,8 +65,16 @@
 </div>
 <div id="game" hidden>
     <canvas id="gameCanvas"></canvas>
-    <input id="gameExit" type="button" value="Exit" onclick="interface.scene(interface.scenes.servers);"/>
-    <div></div>
-    <div></div>
+    <div class="gameUi">
+        <div id="uiTopLeft">
+            <div id="uiTeam"></div>
+            <div id="uiChat"></div>
+        </div>
+        <div id="uiStatus">
+            <input id="gameExit" type="button" value="Exit" onclick="interface.scene(interface.scenes.servers);"/>
+        </div>
+        <div id="uiEnemies"></div>
+        <canvas id="uiMap"></canvas>
+    </div>
 </div>
 <script>document.onload = interface.start();</script>

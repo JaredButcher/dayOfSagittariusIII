@@ -28,6 +28,32 @@ label, input{
     position:absolute;
     z-index: -1;
 }
+.gameUi > *{
+    height:100px;
+    width: 100px;
+    background-color: white;
+    position: absolute;
+}
+#uiTopLeft {
+    top: 0px;
+    left: 0px;
+    border-radius: 0 0 15px 0;
+}
+#uiMap {
+    bottom: 0px;
+    right: 0px;
+    border-radius: 15px 0 0 0;
+}
+#uiEnemies{
+    top: 0px;
+    right: 0px;
+    border-radius: 0 0 0 15px;
+}
+#uiStatus{
+    bottom: 0px;
+    left: 0px;
+    border-radius: 0 15px 0 0;
+}
 @media only screen and (min-width: 640px) and (-webkit-max-device-pixel-ratio: 1.5) {
     label, input{
         width: auto;
