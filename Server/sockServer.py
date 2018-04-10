@@ -108,7 +108,7 @@ class client:
                             res[field.game.value] = sagGame.getInfo()
                             self.send(res)
                     #UPDATE--------------------------------------------------------------------------
-                    elif message[field.action.value] == action.update.value:
+                    elif message[field.action.value] == action.update.value and self.user.game:
                         self.user.game.recUpdate(self.user, message[field.game.value])
                             
             except json.JSONDecodeError as e:

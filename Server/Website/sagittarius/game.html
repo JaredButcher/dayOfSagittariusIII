@@ -66,12 +66,7 @@
 <div id="game" hidden>
     <canvas id="gameCanvas"></canvas>
     <div id="gameUi">
-        <div id="uiTeam">
-            <p>Jeff: 10000 / 10000</p>
-            <p>Longer Name: 10000 / 10000</p>
-            <p>Kitami: 10000 / 10000</p>
-            <p>Jeff: 10000 / 10000</p>
-        </div>
+        <div id="uiTeam"></div>
         <div id="uiStatus">
             <p>Fleet: 10000 / 10000</p>
             <p>Attack: 100 Defense: 100</p>
@@ -91,20 +86,12 @@
             <p>2Jeff: Stuff said and oather things and stuff potaoto and more stuff and other things and another ithing this is slightly long</p>
             <p>1Jeff: Stuff said and oather things and stuff potaoto and more stuff and other things and another ithing this is slightly long</p>
         </div>
-        <div id="uiEnemies">
-                <p>Jeff: 10000 / 10000</p>
-                <p>Longer Name: 10000 / 10000</p>
-                <p>Kitami: 10000 / 10000</p>
-                <p>Jeff: 10000 / 10000</p>
-                <p>Jeff: 10000 / 10000</p>
-                <p>Longer Name: 10000 / 10000</p>
-                <p>Kitami: 10000 / 10000</p>
-                <p>Jeff: 10000 / 10000</p>
-        </div>
+        <div id="uiEnemies"></div>
         <canvas id="uiMap"></canvas>
         <div id="uiEsc" hidden>
             <input id="gameExit" type="button" value="Exit" onclick="interface.scene(interface.scenes.servers);"/>
         </div>
+        <p id="frameRate" style="position: absolute; bottom: 0px; right: 0px;"></p>
     </div>
 </div>
 <script>document.onload = interface.start();</script>

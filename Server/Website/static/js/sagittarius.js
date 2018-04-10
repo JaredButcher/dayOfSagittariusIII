@@ -114,7 +114,7 @@ const network = {
     },
     getCookieEvent: function (callback){ //Run when the session cookie is set
         if(!callback.changeInfo.removed && callback.changeInfo.cookie.name == "session"){
-            var res = {};
+            let res = {};
             res[field.action] = action.init;
             res[field.session] = callback.changeInfo.cookie.value;
             send(res);
@@ -122,10 +122,10 @@ const network = {
         }
     },
     getCookie: function(cook){
-        var name = cook + '=';
-        var decoded = decodeURI(document.cookie);
-        var cookies = decoded.split("; ");
-        for(var i = 0; i < cookies.length; i++){
+        let name = cook + '=';
+        let decoded = decodeURI(document.cookie);
+        let cookies = decoded.split("; ");
+        for(let i = 0; i < cookies.length; i++){
             if(cookies[i].indexOf(name) == 0){
                 return cookies[i].substr(name.length, cookies[i].length);
             }
@@ -133,7 +133,7 @@ const network = {
         return "";
     },
     init: function(){
-        var res = {};
+        let res = {};
         console.log("init")
         res[network.field.action] = network.action.init;
         res[network.field.session] = network.getCookie("session");
@@ -153,7 +153,7 @@ const network = {
 network.conn.onopen = network.init;
 network.conn.onmessage = function (message) { //Receive and direct or process all socket messages
     console.log(message.data);
-    var data = null;
+    let data = null;
     try{
         data = JSON.parse(message.data);
     } catch(e){
@@ -184,7 +184,7 @@ network.conn.onmessage = function (message) { //Receive and direct or process al
             case network.action.join:
                 console.log("Join");
                 document.getElementById("glPlayerInfo").innerHTML = "";
-                var info = data[network.field.game];
+                let info = data[network.field.game];
                 sag.gameInfo.id = info[network.game.id];
                 sag.gameInfo.name = info[network.game.name];
                 sag.gameInfo.owner = info[network.game.owner];
@@ -193,8 +193,8 @@ network.conn.onmessage = function (message) { //Receive and direct or process al
                 sag.gameInfo.pointsMax = info[network.game.shipPoints];
                 sag.gameInfo.teams = info[network.game.teams];
                 sag.gameInfo.players = [];
-                for(var i = 0; i < info[network.game.players].length; i++){
-                    var play = new player(info[network.game.players][i][network.player.id]);
+                for(let i = 0; i < info[network.game.players].length; i++){
+                    let play = new player(info[network.game.players][i][network.player.id]);
                     play.update(info[network.game.players][i]);
                     sag.gameInfo.players.push(play);
                     if(play.name == sag.user.name){
@@ -221,8 +221,8 @@ network.conn.onmessage = function (message) { //Receive and direct or process al
                 document.getElementById("userNameError").style.visibility = "hidden";
                 document.getElementById("nameConfierm").hidden = false;
                 document.getElementById("nameConfierm").innerText = "Name set to: " + data[network.field.name];
-                var buttons = document.getElementsByClassName("startNav");
-                for(var i = 0; i < buttons.length; ++i){
+                let buttons = document.getElementsByClassName("startNav");
+                for(let i = 0; i < buttons.length; ++i){
                     buttons[i].disabled = false;
                 }
                 sag.user.name = data[network.field.name];
@@ -230,12 +230,12 @@ network.conn.onmessage = function (message) { //Receive and direct or process al
             break;
             case network.action.servers:
                 console.log("Servers");
-                var servers = "";
+                let servers = "";
                 if(data[network.field.servers] == null){
                     servers = "<div><h2>No games avaliable<h2></div>";
                 } else {
-                    var info = {}
-                    for(var i = 0; i < data[network.field.servers].length; ++i){
+                    let info = {}
+                    for(let i = 0; i < data[network.field.servers].length; ++i){
                         info = data[network.field.servers][i];
                         servers += '<div class="serverInfo" onclick="interface.join(' + info[network.game.id] + ');"><p>ID: ' + info[network.game.id] + "</p><p>Name: "
                              + info[network.game.name] + "</p><p>Owner: " + info[network.game.owner] + "</p><p>Damage Multiplyer: " + info[network.game.damage]
@@ -250,8 +250,8 @@ network.conn.onmessage = function (message) { //Receive and direct or process al
                 if (interface.currentScene == interface.scenes.game){
 
                 } else if (interface.currentScene == interface.scenes.lobby) {
-                    var sendStats = false;
-                    var info = data[network.field.game];
+                    let sendStats = false;
+                    let info = data[network.field.game];
                     if(info[network.game.name] != null) sag.gameInfo.name = info[network.game.name];
                     if(info[network.game.owner] != null) sag.gameInfo.owner = info[network.game.owner];
                     if(info[network.game.maxPlayers] != null) sag.gameInfo.maxPlayers = info[network.game.maxPlayers];
@@ -262,9 +262,9 @@ network.conn.onmessage = function (message) { //Receive and direct or process al
                     }
                     if(info[network.game.teams] != null) sag.gameInfo.teams = info[network.game.teams];
                     if(info[network.game.players] != null) {
-                        for(var i = 0; i < info[network.game.players].length; i++){
-                            var unfound = true;
-                            for(var j = 0; j < sag.gameInfo.players.length; j++){
+                        for(let i = 0; i < info[network.game.players].length; i++){
+                            let unfound = true;
+                            for(let j = 0; j < sag.gameInfo.players.length; j++){
                                 if(sag.gameInfo.players[j].id == info[network.game.players][i][network.player.id]){
                                     unfound = false;
                                     sag.gameInfo.players[j].update(info[network.game.players][i]);
@@ -272,7 +272,7 @@ network.conn.onmessage = function (message) { //Receive and direct or process al
                                 }
                             }
                             if(unfound){
-                                var play = new player(info[network.game.players][i][network.player.id]);
+                                let play = new player(info[network.game.players][i][network.player.id]);
                                 play.update(info[network.game.players][i]);
                                 sag.gameInfo.players.push(play);
                                 if(play.name == sag.user.name){
@@ -320,8 +320,8 @@ const interface = {
         switch(current){
             case this.scenes.start:
             document.getElementById("start").hidden = false;
-            var buttons = document.getElementsByClassName("startNav"); //CSS display overides the html hidden attribute
-            for(var i = 0; i < buttons.length; ++i){
+            let buttons = document.getElementsByClassName("startNav"); //CSS display overides the html hidden attribute
+            for(let i = 0; i < buttons.length; ++i){
                 buttons[i].disabled = true;
             }
             break;
@@ -351,22 +351,22 @@ const interface = {
     //BUTTONS -----------------------------------------------------------------------------------------------------------
     setName: function(){
         document.getElementById("nameConfierm").hidden = true;
-        var name = document.getElementById("userName").value;
-        var sendObj = {};
+        let name = document.getElementById("userName").value;
+        let sendObj = {};
         sendObj[network.field.action] = network.action.name;
         sendObj[network.field.name] = name;
         network.send(sendObj);
     },
     serverBrowser: function(){
-        var sendObj = {};
+        let sendObj = {};
         sendObj[network.field.action] = network.action.servers;
         network.send(sendObj);
     },
     makeGame: function(){
         console.log("Make Game");
-        var sendObj = {};
+        let sendObj = {};
         sendObj[network.field.action] = network.action.makeGame;
-        var gameObj = {};
+        let gameObj = {};
         gameObj[network.game.name] = document.getElementById("mgName").value;
         gameObj[network.game.maxPlayers] = document.getElementById("mgPlayers").value;
         gameObj[network.game.damage] = document.getElementById("mgDamage").value;
@@ -404,21 +404,21 @@ const interface = {
         document.getElementById("speedStats").innerText = "Speed: " + Math.round((sag.consts.BASE_SPEED + sag.user.speed * sag.consts.MOD_SPEED) * 10) / 10 + " Traverse: " + Math.round((sag.consts.BASE_TRAV + sag.user.speed * sag.consts.MOD_TRAV) * 100) / 100;
         document.getElementById("scoutStats").innerText = "View: " + Math.round(sag.consts.BASE_RANGE + sag.user.scout * sag.consts.MOD_RANGE) + " Scouts: " + Math.floor(sag.consts.BASE_SCOUTS + sag.user.scout * sag.consts.MOD_SCOUTS);
         if(sendStats){
-            var playerInfo = {};
+            let playerInfo = {};
             playerInfo[network.player.attack] = sag.user.attack;
             playerInfo[network.player.defense] = sag.user.defense;
             playerInfo[network.player.speed] = sag.user.speed;
             playerInfo[network.player.scout] = sag.user.scout;
-            var gInfo = {};
+            let gInfo = {};
             gInfo[network.game.players] = [playerInfo];
-            var info = {};
+            let info = {};
             info[network.field.action] = network.action.update;
             info[network.field.game] = gInfo;
             network.send(info)
         }
     },
     join: function(gameId){
-        var obj = {};
+        let obj = {};
         obj[network.field.action] = network.action.join;
         obj[network.field.game] = {};
         obj[network.field.game][network.game.id] = gameId;
@@ -428,11 +428,11 @@ const interface = {
         this.scene(this.scenes.start);
     },
     cycleTeam: function(){
-        var playerInfo = {};
+        let playerInfo = {};
         playerInfo[network.player.team] = sag.teams[(parseInt(sag.user.player.team.id) + 1) % sag.gameInfo.teams].id;
-        var gInfo = {};
+        let gInfo = {};
         gInfo[network.game.players] = [playerInfo];
-        var info = {};
+        let info = {};
         info[network.field.action] = network.action.update;
         info[network.field.game] = gInfo;
         network.send(info)
@@ -539,12 +539,12 @@ const interface = {
             interface.weapon("pri", false, true);
         }
         if(!noSend){
-            var playerInfo = {};
+            let playerInfo = {};
             playerInfo[network.player.primary] = sag.user.pri.id;
             playerInfo[network.player.secondary] = sag.user.sec.id;
-            var gInfo = {};
+            let gInfo = {};
             gInfo[network.game.players] = [playerInfo];
-            var info = {};
+            let info = {};
             info[network.field.action] = network.action.update;
             info[network.field.game] = gInfo;
             network.send(info)
@@ -563,7 +563,7 @@ const interface = {
         this.readyUpdate();
     },
     readyUpdate: function(){
-        var button = document.getElementById("glReady");
+        let button = document.getElementById("glReady");
         if(sag.user.player.ready){
             button.style.backgroundColor = "gray";
         } else {
@@ -571,11 +571,19 @@ const interface = {
         }
     },
     updateUiTeams: function(){
+        let playerTags = ['','','',''];
         sag.gameInfo.players.forEach((player) => {
-            if(player.team == sag.user.player.team){
-                console.log(player.name);
+            if(player != sag.user.player){
+                playerTags[player.team.id] += '<p class="' + player.team.name + 'Team">' + player.name + ": ###" + "/10000<p>";
             }
         });
+        document.getElementById("uiTeam").innerHTML = playerTags[sag.user.player.team.id];
+        let enemies = document.getElementById("uiEnemies");
+        enemies.innerHTML = '';
+        for(let i = 0; i < 4; ++i){
+            if(i == sag.user.player.team.id) continue;
+            enemies.innerHTML += playerTags[i];
+        }
     },
     updateUiSelf: function(){
 
@@ -696,20 +704,22 @@ const sag = {
     //GAME ----------------------------------------------------------------------------------------------------------------
     delta: 0,
     lastFrameTime: 0,
-    MAX_FRAMERATE: 30,
+    MAX_FRAMERATE: 60,
     loop: function(timestamp){
         if(sag.lastFrameTime == 0){
             lastFrameTime = timestamp;
         }
         sag.delta = timestamp - sag.lastFrameTime;
-        if(sag.delta < 1 / sag.MAX_FRAMERATE){
+        if(1000/sag.delta > sag.MAX_FRAMERATE){
             requestAnimationFrame(sag.loop)
             return
         }
-        sag.lastFrameTime = sag.delta;
+        sag.lastFrameTime = timestamp;
         //Update, draw
         render.draw();
         render.update(sag.delta);
+        interface.updateUiTeams();
+        document.getElementById("frameRate").innerText = Math.floor(1000/sag.delta);
         requestAnimationFrame(sag.loop)
     },
     startGame: function() {
@@ -783,7 +793,7 @@ const render = {
                     color: null
                 },
                 setUniforms: () => {
-                    var program = render.programs.vertColor;
+                    let program = render.programs.vertColor;
                     program.uniforms.trans = render.gl.getUniformLocation(program.program, 'trans');
                     program.uniforms.proViewWorld = render.gl.getUniformLocation(program.program, 'proViewWorld');
                     program.uniforms.position = render.gl.getUniformLocation(program.program, 'position');
@@ -812,7 +822,7 @@ const render = {
         render.gl.frontFace(render.gl.CCW);
         render.gl.cullFace(render.gl.BACK);
 
-        for(var program in render.programs){
+        for(let program in render.programs){
             render.gl.useProgram(render.programs[program].program);
             render.programs[program].setUniforms();
         }
@@ -850,7 +860,7 @@ const render = {
         });
     },
     createShader: (gl, type, source) => {
-        var shader = gl.createShader(type);
+        let shader = gl.createShader(type);
         gl.shaderSource(shader, source);
         gl.compileShader(shader);
         if(!gl.getShaderParameter(shader, gl.COMPILE_STATUS)){
@@ -859,7 +869,7 @@ const render = {
         return shader;
     },
     createProgram: (gl, vShader, fShader) => {
-        var program = gl.createProgram();
+        let program = gl.createProgram();
         gl.attachShader(program, vShader);
         gl.attachShader(program, fShader);
         gl.linkProgram(program);
@@ -881,16 +891,16 @@ const render = {
         draw(){
             this.gl.useProgram(this.obj.program.program);
             //Bind buffers
-            var buffer = this.gl.createBuffer();
+            let buffer = this.gl.createBuffer();
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
             this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.obj.buffer), this.gl.STATIC_DRAW);
             buffer = this.gl.createBuffer();
             this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, buffer);
             this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.obj.indice), this.gl.STATIC_DRAW);
             //Set attributes
-            var location = null;
-            var attrib = this.obj.program.attributes;
-            for(var i = 0; i < attrib.length; ++i){
+            let location = null;
+            let attrib = this.obj.program.attributes;
+            for(let i = 0; i < attrib.length; ++i){
                 location = this.gl.getAttribLocation(this.obj.program.program, attrib[i].loc);
                 this.gl.vertexAttribPointer(
                     location,
@@ -944,9 +954,9 @@ class player{
         if(info[network.player.team] != null) this.team = sag.teams[info[network.player.team]];
         if(info[network.player.ready] != null) this.ready = info[network.player.ready];
         if(info[network.player.gameObj] != null){
-            for(var i = 0; i < info[network.player.gameObj].length; i++){
-                var unfound = true;
-                for(var j = 0; j < this.fleets.length; j++){
+            for(let i = 0; i < info[network.player.gameObj].length; i++){
+                let unfound = true;
+                for(let j = 0; j < this.fleets.length; j++){
                     if(this.gameObj[j].id == info[network.player.gameObj][i][network.gameObj.transform][network.transform.id]){
                         unfound = false;
                         this.gameObj[j].update(info[network.player.gameObj][i]);
@@ -954,7 +964,7 @@ class player{
                     }
                 }
                 if(unfound){
-                    var unit;
+                    let unit;
                     switch(info[network.player.gameObj][i][network.gameObj.type]){
                         case network.objType.fleet:
                             unit = new fleet(info[network.player.gameObj][i][network.gameObj.transform][network.transform.id], this);

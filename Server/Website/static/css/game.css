@@ -85,6 +85,21 @@ label, input{
     font-size: 15px;
     padding: 2px 5px;
 }
+.redTeam {
+    color: red;
+    font-family: 'Arial';
+    font-size: 18px;
+}
+.blueTeam {
+    color: blue;
+    font-family: 'times New Roman';
+}
+.greenTeam {
+    color: green;
+}
+.yellowTeam {
+    color: yellow;
+}
 @media only screen and (min-width: 640px) and (-webkit-max-device-pixel-ratio: 1.5) {
     label, input{
         width: auto;
