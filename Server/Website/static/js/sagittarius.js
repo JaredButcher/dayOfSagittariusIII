@@ -569,6 +569,16 @@ const interface = {
         } else {
             button.style.backgroundColor = "";
         }
+    },
+    updateUiTeams: function(){
+        sag.gameInfo.players.forEach((player) => {
+            if(player.team == sag.user.player.team){
+                console.log(player.name);
+            }
+        });
+    },
+    updateUiSelf: function(){
+
     }
 };
 const sag = {
