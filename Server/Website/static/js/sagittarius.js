@@ -317,6 +317,7 @@ const interface = {
         document.getElementById("servers").hidden = true;
         document.getElementById("lobby").style.display = "none";
         document.getElementById("game").hidden = true;
+        document.getElementById("uiEsc").hidden = true;
         switch(current){
             case this.scenes.start:
             document.getElementById("start").hidden = false;
@@ -573,9 +574,7 @@ const interface = {
     updateUiTeams: function(){
         let playerTags = ['','','',''];
         sag.gameInfo.players.forEach((player) => {
-            if(player != sag.user.player){
-                playerTags[player.team.id] += '<p class="' + player.team.name + 'Team">' + player.name + ": ###" + "/10000<p>";
-            }
+            playerTags[player.team.id] += '<p class="' + player.team.name + 'Team">' + player.name + ": ###" + "/10000<p>";
         });
         document.getElementById("uiTeam").innerHTML = playerTags[sag.user.player.team.id];
         let enemies = document.getElementById("uiEnemies");
@@ -588,6 +587,7 @@ const interface = {
     updateUiSelf: function(){
 
     }
+
 };
 const sag = {
     user: {
@@ -705,7 +705,14 @@ const sag = {
     delta: 0,
     lastFrameTime: 0,
     MAX_FRAMERATE: 60,
+    running: true,
+    mouseDownLoc: [0,0],
+    mouseLoc: [0,0],
+    mouseDown: false,
+    MOUSEMOVE_TRESHOLD: 8,
+    worldPos: [0, 0, 0],
     loop: function(timestamp){
+        if(!sag.running) return;
         if(sag.lastFrameTime == 0){
             lastFrameTime = timestamp;
         }
@@ -723,13 +730,47 @@ const sag = {
         requestAnimationFrame(sag.loop)
     },
     startGame: function() {
+        sag.running = true;
         document.getElementsByClassName("navbar")[0].style.display = "none";
         document.getElementById("footer").hidden = true;
+        document.onkeydown = (evt) => {
+            sag.mouseDown = true;
+            console.log(evt);
+            if(evt.key == "Escape"){
+                document.getElementById("uiEsc").hidden = !document.getElementById("uiEsc").hidden;
+            }
+        }
         render.init();
+        document.addEventListener('mouseup', (evt) =>{
+            sag.mouseDown = false;
+            let pos = [evt.clientX * 2 / render.canvas.width - 1,
+            evt.clientY * -2 / render.canvas.height - 1];
+        });
+        document.addEventListener('mousedown', (evt) =>{
+            sag.mouseDown = true;
+            sag.mouseDownLoc = [evt.clientX, evt.clientY];
+        });
+        document.addEventListener('mousemove', (evt) =>{
+            if(sag.mouseDown && (evt.clientX + sag.MOUSEMOVE_TRESHOLD > sag.mouseDownLoc[0] || 
+                evt.clientX - sag.MOUSEMOVE_TRESHOLD < sag.mouseDownLoc[0] || 
+                evt.clientY + sag.MOUSEMOVE_TRESHOLD > sag.mouseDownLoc[1] || 
+                evt.clientY - sag.MOUSEMOVE_TRESHOLD < sag.mouseDownLoc[1])){
+                    let pos = [(evt.clientX) * 2 / render.canvas.width - 1,
+                        (evt.clientY) * -2 / render.canvas.height + 1];
+                    sag.worldPos = [sag.worldPos[0] + pos[0] / 1000, sag.worldPos[1] + pos[1] / 1000, 0]
+                    sag.mouseDownLoc = [evt.clientX, evt.clientY];
+                    console.log(pos);
+                }
+        });
         render.objToDraw.push(new render.drawObj(render.gl, render.obj.testTrapazoid));
+        let obj = new render.drawObj(render.gl, render.obj.testTrapazoid);
+        obj.setPos([.5, .5, 0]);
+        render.objToDraw.push(obj);
+        obj = new render.drawObj(render.gl, render.obj.ship);
+        obj.setPos([-.5, .5, 0]);
+        render.objToDraw.push(obj);
         requestAnimationFrame(sag.loop);
     },
-    
 };
 const render = {
     canvas: null,
@@ -748,12 +789,13 @@ const render = {
         attribute vec4 vertColor;
         uniform vec4 color;
         uniform vec3 position;
+        uniform vec3 world;
         uniform mat4 trans;
         uniform mat4 proViewWorld;
         varying vec4 fragColor;
         void main(){
             fragColor = vertColor + color;
-            gl_Position = proViewWorld * trans * vec4(vertPos, 1.0) + vec4(position, 0.0);
+            gl_Position = proViewWorld * trans * vec4(vertPos, 1.0) + vec4(position, 0.0) + vec4(world, 0.0);
         }
     `,
     vertFragShader: `
@@ -790,7 +832,8 @@ const render = {
                     trans: null,
                     proViewWorld: null,
                     position: null,
-                    color: null
+                    color: null,
+                    world: null
                 },
                 setUniforms: () => {
                     let program = render.programs.vertColor;
@@ -798,6 +841,7 @@ const render = {
                     program.uniforms.proViewWorld = render.gl.getUniformLocation(program.program, 'proViewWorld');
                     program.uniforms.position = render.gl.getUniformLocation(program.program, 'position');
                     program.uniforms.color = render.gl.getUniformLocation(program.program, 'color');
+                    program.uniforms.world = render.gl.getUniformLocation(program.program, 'world');
                 }
             }
         };
@@ -813,6 +857,23 @@ const render = {
                 indice: [
                     0,1,3,
                     1,2,3,
+                ]
+            },
+            ship: {
+                program: render.programs.vertColor,
+                buffer: [
+                    0, 1, 0, 1, 1, 1, 1,
+                    -.5, 0, 0, 1, 1, 1, 1,
+                    .5, 0, 0, 1, 1, 1, 1,
+                    0, 0, 0, .5, .5, .5, 1,
+                    -.5, -.5, 0, 1, 1, 1, 1,
+                    .5, -.5, 0, 1, 1, 1, 1
+                ],
+                indice: [
+                    3,0,1,
+                    2,0,3,
+                    4,3,1,
+                    5,2,3,
                 ]
             }
         };
@@ -914,6 +975,7 @@ const render = {
             }
             //Set uniforms
             this.gl.uniform3fv(this.obj.program.uniforms.position, this.pos);
+            this.gl.uniform3fv(this.obj.program.uniforms.world, sag.worldPos);
             this.gl.uniformMatrix4fv(this.obj.program.uniforms.trans, this.gl.FALSE, this.trans);
             this.gl.uniformMatrix4fv(this.obj.program.uniforms.proViewWorld, this.gl.FALSE, render.proViewWorld);
             this.gl.uniform4fv(this.obj.program.uniforms.color, this.color);
@@ -932,7 +994,9 @@ const render = {
         }
         //abs set true to move absoutely on screen space
         setPos(pos, abs = false){
-
+            if(!abs){
+                this.pos = pos;
+            }
         }
         transform(transform, time = 0){
 

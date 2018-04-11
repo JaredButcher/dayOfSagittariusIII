@@ -30,7 +30,7 @@ label, input{
 }
 
 #gameUi > *{
-    background-color: rgba(255, 255, 255, 0.25);
+    background-color: rgba(255, 255, 255, 0.1);
     position: absolute;
     color: white;
     font-size: 18px;
@@ -52,9 +52,9 @@ label, input{
     padding: 2px 5px;
 }
 #uiStatus{
-    bottom: 200px;
+    bottom: 0px;
     left: 0px;
-    border-radius: 0 15px 15px 0;
+    border-radius: 0 15px 0 0;
 }
 #uiEsc{
     left: 40%;
@@ -72,18 +72,45 @@ label, input{
     padding: 2px 5px;
 }
 #uiChat{
-    bottom: 0px;
+    background-color: #0000;
+    bottom: 120px;
     left: 0px;
     border-radius: 0 15px 0 0;
-    width: 30%;
-    max-width: 600px;
+    width: 20%;
+    max-width: 500px;
     max-height: 200px;
     overflow-y: scroll;
     overflow-x: auto;
 }
+#uiChatInput{
+    bottom: 100px;
+    left: 0px;
+    width: 20%;
+    max-width: 500px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 0 0 15px 0;
+    border: none;
+    font-size: 15px;
+}
+#uiChat::-webkit-scrollbar{
+    display: none;
+}
+#uiChat::-webkit-scrollbar-button{
+    display: none;
+}
+#uiChat::-webkit-scrollbar-thumb{
+    display: none;
+}
+#uiChat::-webkit-scrollbar-track{
+    display: none;
+}
+#uiChat::-webkit-scrollbar-track-piece{
+    display: none;
+}
 #uiChat > *{
     font-size: 15px;
     padding: 2px 5px;
+    background-color: rgba(255, 255, 255, 0.1);
 }
 .redTeam {
     color: red;
@@ -91,7 +118,7 @@ label, input{
     font-size: 18px;
 }
 .blueTeam {
-    color: blue;
+    color: #0000dd;
     font-family: 'times New Roman';
 }
 .greenTeam {
