@@ -701,6 +701,42 @@ const sag = {
     calcDefense: function(damage){
         return damage / (sag.user.defense * sag.consts.MOD_DEFENSE);
     },
+    keyDown: function(evt){
+        if(evt.key.toLowerCase() in sag.keysDown){
+            sag.keysDown[evt.key.toLowerCase()].down = true;
+        }else if(evt.key == "Escape"){
+            document.getElementById("uiEsc").hidden = !document.getElementById("uiEsc").hidden;
+        }else if(evt.key == "Shift"){
+            sag.shiftDown = true;
+        }
+    },
+    keyUp: function(evt){
+        if(evt.key.toLowerCase() in sag.keysDown){
+            sag.keysDown[evt.key.toLowerCase()].down = false;
+        }else if(evt.key == "Shift"){
+            sag.shiftDown = false;
+        }
+    },
+    mouseUp: function(evt){
+        sag.mouseIsDown = false;
+        let pos = [evt.clientX * 2 / render.canvas.width - 1,
+        evt.clientY * -2 / render.canvas.height - 1];
+    },
+    mouseDown: function(evt){
+        sag.mouseIsDown = true;
+        sag.mouseDownLoc = [evt.clientX, evt.clientY];
+    },
+    mouseMove: function(evt){
+        if(sag.mouseIsDown && (evt.clientX + sag.MOUSEMOVE_TRESHOLD > sag.mouseDownLoc[0] || 
+        evt.clientX - sag.MOUSEMOVE_TRESHOLD < sag.mouseDownLoc[0] || 
+        evt.clientY + sag.MOUSEMOVE_TRESHOLD > sag.mouseDownLoc[1] || 
+        evt.clientY - sag.MOUSEMOVE_TRESHOLD < sag.mouseDownLoc[1])){
+            let pos = [(evt.clientX - sag.mouseDownLoc[0]) * 2 / render.canvas.width,
+                (evt.clientY - sag.mouseDownLoc[1]) * -2 / render.canvas.height];
+            sag.worldPos = [sag.worldPos[0] + pos[0], sag.worldPos[1] + pos[1], 0]
+            sag.mouseDownLoc = [evt.clientX, evt.clientY];
+        }
+    },
     //GAME ----------------------------------------------------------------------------------------------------------------
     delta: 0,
     lastFrameTime: 0,
@@ -708,7 +744,9 @@ const sag = {
     running: true,
     mouseDownLoc: [0,0],
     mouseLoc: [0,0],
-    mouseDown: false,
+    shiftDown: false,
+    keysDown: null,
+    keysDownKeys: null,
     MOUSEMOVE_TRESHOLD: 8,
     worldPos: [0, 0, 0],
     loop: function(timestamp){
@@ -722,7 +760,12 @@ const sag = {
             return
         }
         sag.lastFrameTime = timestamp;
-        //Update, draw
+        let speed = (sag.shiftDown) ? .1 : .03; //HERE LIE THY SCREEN SPEEDS
+        for(let i = 0; i < sag.keysDownKeys.length; ++i){
+            if(sag.keysDown[sag.keysDownKeys[i]].down){
+                sag.keysDown[sag.keysDownKeys[i]].on(speed);
+            }
+        }
         render.draw();
         render.update(sag.delta);
         interface.updateUiTeams();
@@ -733,35 +776,28 @@ const sag = {
         sag.running = true;
         document.getElementsByClassName("navbar")[0].style.display = "none";
         document.getElementById("footer").hidden = true;
-        document.onkeydown = (evt) => {
-            sag.mouseDown = true;
-            console.log(evt);
-            if(evt.key == "Escape"){
-                document.getElementById("uiEsc").hidden = !document.getElementById("uiEsc").hidden;
-            }
-        }
+        document.body.classList.add("noSelect");
+        sag.keysDown = {
+            'w': {down: false, on: (speed) =>{
+                sag.worldPos[1] += speed;
+            }},
+            's': {down: false, on: (speed) =>{
+                sag.worldPos[1] -= speed;
+            }},
+            'a': {down: false, on: (speed) =>{
+                sag.worldPos[0] -= speed;
+            }},
+            'd': {down: false, on: (speed) =>{
+                sag.worldPos[0] += speed;
+            }},
+        };
+        sag.keysDownKeys = Object.keys(sag.keysDown);
         render.init();
-        document.addEventListener('mouseup', (evt) =>{
-            sag.mouseDown = false;
-            let pos = [evt.clientX * 2 / render.canvas.width - 1,
-            evt.clientY * -2 / render.canvas.height - 1];
-        });
-        document.addEventListener('mousedown', (evt) =>{
-            sag.mouseDown = true;
-            sag.mouseDownLoc = [evt.clientX, evt.clientY];
-        });
-        document.addEventListener('mousemove', (evt) =>{
-            if(sag.mouseDown && (evt.clientX + sag.MOUSEMOVE_TRESHOLD > sag.mouseDownLoc[0] || 
-                evt.clientX - sag.MOUSEMOVE_TRESHOLD < sag.mouseDownLoc[0] || 
-                evt.clientY + sag.MOUSEMOVE_TRESHOLD > sag.mouseDownLoc[1] || 
-                evt.clientY - sag.MOUSEMOVE_TRESHOLD < sag.mouseDownLoc[1])){
-                    let pos = [(evt.clientX) * 2 / render.canvas.width - 1,
-                        (evt.clientY) * -2 / render.canvas.height + 1];
-                    sag.worldPos = [sag.worldPos[0] + pos[0] / 1000, sag.worldPos[1] + pos[1] / 1000, 0]
-                    sag.mouseDownLoc = [evt.clientX, evt.clientY];
-                    console.log(pos);
-                }
-        });
+        document.addEventListener('keydown', sag.keyDown);
+        document.addEventListener('keyup', sag.keyUp);
+        document.addEventListener('mouseup', sag.mouseUp);
+        document.addEventListener('mousedown', sag.mouseDown);
+        document.addEventListener('mousemove', sag.mouseMove);
         render.objToDraw.push(new render.drawObj(render.gl, render.obj.testTrapazoid));
         let obj = new render.drawObj(render.gl, render.obj.testTrapazoid);
         obj.setPos([.5, .5, 0]);
