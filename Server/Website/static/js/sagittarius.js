@@ -1,3 +1,9 @@
+/*
+0. Grid
+1. Make minimap
+2. Default spawn
+3. Shared stuff
+*/
 const network = {
     inited: false,
     field: {
@@ -718,36 +724,48 @@ const sag = {
         }
     },
     mouseUp: function(evt){
-        sag.mouseIsDown = false;
-        let pos = [evt.clientX * 2 / render.canvas.width - 1,
-        evt.clientY * -2 / render.canvas.height - 1];
+        if(evt.button == 0){
+            sag.mouseLIsDown = false;
+            let pos = [evt.clientX * 2 / render.canvas.width - 1,
+                evt.clientY * -2 / render.canvas.height - 1];
+        }else if(evt.button == 2){
+            sag.mouseLIsDown = false;
+        }
+        
     },
     mouseDown: function(evt){
-        sag.mouseIsDown = true;
-        sag.mouseDownLoc = [evt.clientX, evt.clientY];
+        if(evt.button == 0){
+            sag.mouseLIsDown = true;
+            sag.mouseDownLocL = [evt.clientX, evt.clientY];
+        }else if(evt.button == 2){
+            sag.mouseRIsDown = true;
+            sag.mouseDownLocR = [evt.clientX, evt.clientY];
+        }
     },
     mouseMove: function(evt){
-        if(sag.mouseIsDown && (evt.clientX + sag.MOUSEMOVE_TRESHOLD > sag.mouseDownLoc[0] || 
-        evt.clientX - sag.MOUSEMOVE_TRESHOLD < sag.mouseDownLoc[0] || 
-        evt.clientY + sag.MOUSEMOVE_TRESHOLD > sag.mouseDownLoc[1] || 
-        evt.clientY - sag.MOUSEMOVE_TRESHOLD < sag.mouseDownLoc[1])){
-            let pos = [(evt.clientX - sag.mouseDownLoc[0]) * 2 / render.canvas.width,
-                (evt.clientY - sag.mouseDownLoc[1]) * -2 / render.canvas.height];
+        if(sag.mouseLIsDown && (evt.clientX - sag.MOUSEMOVE_TRESHOLD > sag.mouseDownLocL[0] || 
+        evt.clientX + sag.MOUSEMOVE_TRESHOLD < sag.mouseDownLocL[0] || 
+        evt.clientY - sag.MOUSEMOVE_TRESHOLD > sag.mouseDownLocL[1] || 
+        evt.clientY + sag.MOUSEMOVE_TRESHOLD < sag.mouseDownLocL[1])){
+            let pos = [(evt.clientX - sag.mouseDownLocL[0]) * 2 / render.canvas.width,
+                (evt.clientY - sag.mouseDownLocL[1]) * -2 / render.canvas.height];
             sag.worldPos = [sag.worldPos[0] + pos[0], sag.worldPos[1] + pos[1], 0]
-            sag.mouseDownLoc = [evt.clientX, evt.clientY];
+            sag.mouseDownLocL = [evt.clientX, evt.clientY];
         }
     },
     //GAME ----------------------------------------------------------------------------------------------------------------
     delta: 0,
+    MAP_SIZE: 10,
     lastFrameTime: 0,
     MAX_FRAMERATE: 60,
     running: true,
-    mouseDownLoc: [0,0],
+    mouseDownLocR: [0,0],
+    mouseDownLocL: [0,0],
     mouseLoc: [0,0],
     shiftDown: false,
     keysDown: null,
     keysDownKeys: null,
-    MOUSEMOVE_TRESHOLD: 8,
+    MOUSEMOVE_TRESHOLD: 5,
     worldPos: [0, 0, 0],
     loop: function(timestamp){
         if(!sag.running) return;
@@ -777,18 +795,21 @@ const sag = {
         document.getElementsByClassName("navbar")[0].style.display = "none";
         document.getElementById("footer").hidden = true;
         document.body.classList.add("noSelect");
+        document.oncontextmenu = function() {
+            return false;
+        }
         sag.keysDown = {
             'w': {down: false, on: (speed) =>{
-                sag.worldPos[1] += speed;
-            }},
-            's': {down: false, on: (speed) =>{
                 sag.worldPos[1] -= speed;
             }},
+            's': {down: false, on: (speed) =>{
+                sag.worldPos[1] += speed;
+            }},
             'a': {down: false, on: (speed) =>{
-                sag.worldPos[0] -= speed;
+                sag.worldPos[0] += speed;
             }},
             'd': {down: false, on: (speed) =>{
-                sag.worldPos[0] += speed;
+                sag.worldPos[0] -= speed;
             }},
         };
         sag.keysDownKeys = Object.keys(sag.keysDown);
@@ -801,9 +822,9 @@ const sag = {
         render.objToDraw.push(new render.drawObj(render.gl, render.obj.testTrapazoid));
         let obj = new render.drawObj(render.gl, render.obj.testTrapazoid);
         obj.setPos([.5, .5, 0]);
+        obj.setColor([1.0, 0.0, 0.0, 1.0])
         render.objToDraw.push(obj);
-        obj = new render.drawObj(render.gl, render.obj.ship);
-        obj.setPos([-.5, .5, 0]);
+        obj = new render.drawObj(render.gl, render.obj.line);
         render.objToDraw.push(obj);
         requestAnimationFrame(sag.loop);
     },
@@ -884,6 +905,7 @@ const render = {
         render.obj = {
             testTrapazoid: {
                 program: render.programs.vertColor,
+                drawType: "triangle",
                 buffer: [
                     -.5, .5, 0.0, 1.0, 0.0, 0.0, 1.0,
                     -1.0, -.5, 0.0, 0.0, 1.0, 0.0, 1.0,
@@ -897,6 +919,7 @@ const render = {
             },
             ship: {
                 program: render.programs.vertColor,
+                drawType: "triangle",
                 buffer: [
                     0, 1, 0, 1, 1, 1, 1,
                     -.5, 0, 0, 1, 1, 1, 1,
@@ -911,8 +934,28 @@ const render = {
                     4,3,1,
                     5,2,3,
                 ]
+            },
+            line: {
+                program: render.programs.vertColor,
+                drawType: "line",
+                buffer: []
             }
         };
+        {
+            let buffer = [];
+            for(let i = 0; i < sag.MAP_SIZE + 1; ++i){
+                for(let j = 0; j < 4; ++j){
+                    buffer[i * 28 + j * 7] = (j == 0) ? 0 : (j == 1) ? sag.MAP_SIZE * 10 : i * 10;
+                    buffer[i * 28 + j * 7 + 1] = (j == 2) ? 0 : (j == 3) ? sag.MAP_SIZE * 10 : i * 10;
+                    buffer[i * 28 + j * 7 + 2] = 0;
+                    buffer[i * 28 + j * 7 + 3] = 1;
+                    buffer[i * 28 + j * 7 + 4] = 1;
+                    buffer[i * 28 + j * 7 + 5] = 1;
+                    buffer[i * 28 + j * 7 + 6] = 1;
+                }
+            }
+            render.obj.line.buffer = buffer;
+        }
         window.addEventListener('resize', render.resize, true);
         render.gl.enable(render.gl.DEPTH_TEST);
         render.gl.enable(render.gl.CULL_FACE);
@@ -987,39 +1030,72 @@ const render = {
         }
         draw(){
             this.gl.useProgram(this.obj.program.program);
-            //Bind buffers
-            let buffer = this.gl.createBuffer();
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
-            this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.obj.buffer), this.gl.STATIC_DRAW);
-            buffer = this.gl.createBuffer();
-            this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, buffer);
-            this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.obj.indice), this.gl.STATIC_DRAW);
-            //Set attributes
-            let location = null;
-            let attrib = this.obj.program.attributes;
-            for(let i = 0; i < attrib.length; ++i){
-                location = this.gl.getAttribLocation(this.obj.program.program, attrib[i].loc);
-                this.gl.vertexAttribPointer(
-                    location,
-                    attrib[i].size,
-                    attrib[i].type,
-                    attrib[i].norm,
-                    attrib[i].stride,
-                    attrib[i].offset
-                );
-                this.gl.enableVertexAttribArray(location);
+            if(this.obj.drawType == "triangle"){
+                //Bind buffers
+                let buffer = this.gl.createBuffer();
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
+                this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.obj.buffer), this.gl.STATIC_DRAW);
+                buffer = this.gl.createBuffer();
+                this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, buffer);
+                this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.obj.indice), this.gl.STATIC_DRAW);
+                //Set attributes
+                let location = null;
+                let attrib = this.obj.program.attributes;
+                for(let i = 0; i < attrib.length; ++i){
+                    location = this.gl.getAttribLocation(this.obj.program.program, attrib[i].loc);
+                    this.gl.vertexAttribPointer(
+                        location,
+                        attrib[i].size,
+                        attrib[i].type,
+                        attrib[i].norm,
+                        attrib[i].stride,
+                        attrib[i].offset
+                    );
+                    this.gl.enableVertexAttribArray(location);
+                }
+                //Set uniforms
+                this.gl.uniform3fv(this.obj.program.uniforms.position, this.pos);
+                this.gl.uniform3fv(this.obj.program.uniforms.world, sag.worldPos);
+                this.gl.uniformMatrix4fv(this.obj.program.uniforms.trans, this.gl.FALSE, this.trans);
+                this.gl.uniformMatrix4fv(this.obj.program.uniforms.proViewWorld, this.gl.FALSE, render.proViewWorld);
+                this.gl.uniform4fv(this.obj.program.uniforms.color, this.color);
+                //Draw
+                this.gl.drawElements(this.gl.TRIANGLES, this.obj.indice.length, this.gl.UNSIGNED_SHORT, 0);
+            }else if(this.obj.drawType == "line"){
+                //Bind buffers
+                let buffer = this.gl.createBuffer();
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
+                this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.obj.buffer), this.gl.STATIC_DRAW);
+                //Set attributes
+                let location = null;
+                let attrib = this.obj.program.attributes;
+                for(let i = 0; i < attrib.length; ++i){
+                    location = this.gl.getAttribLocation(this.obj.program.program, attrib[i].loc);
+                    this.gl.vertexAttribPointer(
+                        location,
+                        attrib[i].size,
+                        attrib[i].type,
+                        attrib[i].norm,
+                        attrib[i].stride,
+                        attrib[i].offset
+                    );
+                    this.gl.enableVertexAttribArray(location);
+                }
+                //Set uniforms
+                this.gl.uniform3fv(this.obj.program.uniforms.position, this.pos);
+                this.gl.uniform3fv(this.obj.program.uniforms.world, sag.worldPos);
+                this.gl.uniformMatrix4fv(this.obj.program.uniforms.trans, this.gl.FALSE, this.trans);
+                this.gl.uniformMatrix4fv(this.obj.program.uniforms.proViewWorld, this.gl.FALSE, render.proViewWorld);
+                this.gl.uniform4fv(this.obj.program.uniforms.color, this.color);
+                //Draw
+                this.gl.drawArrays(this.gl.LINES, 0, this.obj.buffer.length / 7);
             }
-            //Set uniforms
-            this.gl.uniform3fv(this.obj.program.uniforms.position, this.pos);
-            this.gl.uniform3fv(this.obj.program.uniforms.world, sag.worldPos);
-            this.gl.uniformMatrix4fv(this.obj.program.uniforms.trans, this.gl.FALSE, this.trans);
-            this.gl.uniformMatrix4fv(this.obj.program.uniforms.proViewWorld, this.gl.FALSE, render.proViewWorld);
-            this.gl.uniform4fv(this.obj.program.uniforms.color, this.color);
-            //Draw
-            this.gl.drawElements(this.gl.TRIANGLES, this.obj.indice.length, this.gl.UNSIGNED_SHORT, 0);
         }
         update(delta){
 
+        }
+        setColor(color){
+            this.color = [color[0] - 1.0, color[1] - 1.0, color[2] - 1.0, color[3] - 1.0]
         }
         bindBuffersAttributes(){
 
@@ -1114,13 +1190,13 @@ class transform{
     }
 };
 class fleet extends transform{
-    constructor(id, player){
+    constructor(id, player, size, loc){
         super.transform(id, player);
+        this.size = size
     }
     update(info){
         super.update(info[network.gameObj.transform]);
     }
 };
 class scout extends transform{
-
 };
