@@ -779,6 +779,7 @@ const sag = {
     keysDownKeys: null,
     MOUSEMOVE_TRESHOLD: 5,
     SPEED: .02,
+    minimapSize: 2,
     worldPos: [0, 0, 0],
     loop: function(timestamp){
         if(!sag.running) return;
@@ -839,6 +840,9 @@ const sag = {
         render.objToDraw.push(obj);
         obj = new render.drawObj(render.gl, render.obj.line);
         render.objToDraw.push(obj);
+        obj = new render.drawObj(render.gl, render.obj.dot);
+        obj.setPos([20,20,0]);
+        render.objToDraw.push(obj);
         requestAnimationFrame(sag.loop);
     },
 };
@@ -854,6 +858,9 @@ const render = {
     view: new Float32Array(16),
     projection: new Float32Array(16),
     proViewWorld: new Float32Array(16),
+    minimapWorld: new Float32Array(16),
+    minimapProject: new Float32Array(16),
+    minimapMatrix: new Float32Array(16),
     vertVertShader: `
         precision mediump float;
         attribute vec3 vertPos;
@@ -866,7 +873,7 @@ const render = {
         varying vec4 fragColor;
         void main(){
             fragColor = vertColor + color;
-            gl_Position = proViewWorld * trans * (vec4(vertPos, 1.0) + vec4(position, 0.0) + vec4(world, 0.0));
+            gl_Position = proViewWorld * ((trans * vec4(vertPos, 1.0)) + vec4(position, 0.0) + vec4(world, 0.0));
         }
     `,
     vertFragShader: `
@@ -920,6 +927,7 @@ const render = {
             testTrapazoid: {
                 program: render.programs.vertColor,
                 drawType: "triangle",
+                minimapScale: 4,
                 buffer: [
                     -.5, .5, 0.0, 1.0, 0.0, 0.0, 1.0,
                     -1.0, -.5, 0.0, 0.0, 1.0, 0.0, 1.0,
@@ -953,6 +961,12 @@ const render = {
                 program: render.programs.vertColor,
                 drawType: "line",
                 buffer: []
+            },
+            dot: {
+                program: render.programs.vertColor,
+                drawType: "triangle",
+                buffer: [],
+                indice: []
             }
         };
         { //Det the values of the line object
@@ -969,6 +983,29 @@ const render = {
                 }
             }
             render.obj.line.buffer = buffer;
+            let radius = 2;
+            let points = 6;
+            buffer = [];
+            indice = [];
+            for(let i = 0; i <= points; ++i){
+                if(i == 0){
+                    buffer[i * 7] = 0;
+                    buffer[i * 7 + 1] = 0;
+                }else{
+                    buffer[i * 7] = radius * Math.cos(2 * Math.PI / points * i);
+                    buffer[i * 7 + 1] = radius * Math.sin(2 * Math.PI / points * i);
+                    indice[(i - 1) * 3] = 0;
+                    indice[(i - 1) * 3 + 1] = i;
+                    indice[(i - 1) * 3 + 2] = i % points + 1;
+                }
+                buffer[i * 7 + 2] = 0;
+                buffer[i * 7 + 3] = 1;
+                buffer[i * 7 + 4] = 1;
+                buffer[i * 7 + 5] = 1;
+                buffer[i * 7 + 6] = 1;
+            }
+            render.obj.dot.buffer = buffer;
+            render.obj.dot.indice = indice;
         }
         window.addEventListener('resize', render.resize, true);
         render.gl.enable(render.gl.DEPTH_TEST);
@@ -983,6 +1020,9 @@ const render = {
         mat4.identity(render.world);
         mat4.invert(render.invWorld, render.world);
         mat4.lookAt(render.view, [0, 0, -1], [0, 0, 0], [0, 1, 0]);
+        mat4.identity(render.minimapWorld);
+        render.minimapWorld[5] = 1 / sag.minimapSize;
+        mat4.ortho(render.minimapProject, sag.MAP_SIZE * 10, 0, 0, sag.MAP_SIZE * 10, .1, 10);
         render.resize();
     },
     resize: () => {
@@ -993,6 +1033,9 @@ const render = {
         mat4.ortho(render.projection, 10 + render.zoom, -10 - render.zoom, ratio * (-10 - render.zoom), ratio * (10 + render.zoom), .1, 10);
         mat4.multiply(render.proViewWorld, render.projection, render.view);
         mat4.multiply(render.proViewWorld, render.proViewWorld, render.world);
+        render.minimapWorld[0] = ratio / sag.minimapSize;
+        mat4.multiply(render.minimapMatrix, render.minimapProject, render.view)
+        mat4.multiply(render.minimapMatrix, render.minimapMatrix, render.minimapWorld)
     },
     draw: () => {
         render.gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -1000,6 +1043,15 @@ const render = {
         render.objToDraw.forEach((obj) => {
             obj.draw();
         });
+        render.gl.enable(render.gl.SCISSOR_TEST);
+        let minimapSize = render.canvas.height / sag.minimapSize;
+        render.gl.scissor(render.canvas.width - minimapSize,0,minimapSize,minimapSize);
+        render.gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        render.gl.clear(render.gl.COLOR_BUFFER_BIT | render.gl.DEPTH_BUFFER_BIT);
+        render.objToDraw.forEach((obj) => {
+            obj.draw(true);
+        });
+        render.gl.disable(render.gl.SCISSOR_TEST);
     },
     update: (delta) => {
         render.objToDraw.forEach((obj) => {
@@ -1034,60 +1086,58 @@ const render = {
             this.color = [0.0, 0.0, 0.0, 0.0];
             this.trans = new Float32Array(16);
             mat4.identity(this.trans);
+            if(this.obj.minimapScale != null){
+                this.minimapScale = new Float32Array(16);
+                mat4.identity(this.minimapScale);
+                this.minimapScale[0] = this.obj.minimapScale;
+                this.minimapScale[5] = this.obj.minimapScale;
+                mat4.multiply(this.minimapScale, this.trans, this.minimapScale);
+            }
         }
-        draw(){
+        draw(minimap=false){
             render.gl.useProgram(this.obj.program.program);
-                        //Set uniforms
+            //Set uniforms
             render.gl.uniform3fv(this.obj.program.uniforms.position, this.pos);
-            render.gl.uniform3fv(this.obj.program.uniforms.world, sag.worldPos);
-            render.gl.uniformMatrix4fv(this.obj.program.uniforms.trans, render.gl.FALSE, this.trans);
-            render.gl.uniformMatrix4fv(this.obj.program.uniforms.proViewWorld, render.gl.FALSE, render.proViewWorld);
+            if(minimap){
+                render.gl.uniform3fv(this.obj.program.uniforms.world, [-100,0,0]);
+                render.gl.uniformMatrix4fv(this.obj.program.uniforms.proViewWorld, render.gl.FALSE, render.minimapMatrix);
+            }else{
+                render.gl.uniform3fv(this.obj.program.uniforms.world, sag.worldPos);
+                render.gl.uniformMatrix4fv(this.obj.program.uniforms.proViewWorld, render.gl.FALSE, render.proViewWorld);
+            }
+            if(minimap && this.minimapScale != null){
+                render.gl.uniformMatrix4fv(this.obj.program.uniforms.trans, render.gl.FALSE, this.minimapScale);
+            } else {
+                render.gl.uniformMatrix4fv(this.obj.program.uniforms.trans, render.gl.FALSE, this.trans);
+            }
             render.gl.uniform4fv(this.obj.program.uniforms.color, this.color);
+            //Bind buffers
+            let buffer = render.gl.createBuffer();
+            render.gl.bindBuffer(render.gl.ARRAY_BUFFER, buffer);
+            render.gl.bufferData(render.gl.ARRAY_BUFFER, new Float32Array(this.obj.buffer), render.gl.STATIC_DRAW);
+            //Set attributes
+            let location = null;
+            let attrib = this.obj.program.attributes;
+            for(let i = 0; i < attrib.length; ++i){
+                location = render.gl.getAttribLocation(this.obj.program.program, attrib[i].loc);
+                render.gl.vertexAttribPointer(
+                    location,
+                    attrib[i].size,
+                    attrib[i].type,
+                    attrib[i].norm,
+                    attrib[i].stride,
+                    attrib[i].offset
+                );
+                render.gl.enableVertexAttribArray(location);
+            }
             if(this.obj.drawType == "triangle"){
-                //Bind buffers
-                let buffer = render.gl.createBuffer();
-                render.gl.bindBuffer(render.gl.ARRAY_BUFFER, buffer);
-                render.gl.bufferData(render.gl.ARRAY_BUFFER, new Float32Array(this.obj.buffer), render.gl.STATIC_DRAW);
+                //Bind Edge buffers
                 buffer = render.gl.createBuffer();
                 render.gl.bindBuffer(render.gl.ELEMENT_ARRAY_BUFFER, buffer);
                 render.gl.bufferData(render.gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.obj.indice), render.gl.STATIC_DRAW);
-                //Set attributes
-                let location = null;
-                let attrib = this.obj.program.attributes;
-                for(let i = 0; i < attrib.length; ++i){
-                    location = render.gl.getAttribLocation(this.obj.program.program, attrib[i].loc);
-                    render.gl.vertexAttribPointer(
-                        location,
-                        attrib[i].size,
-                        attrib[i].type,
-                        attrib[i].norm,
-                        attrib[i].stride,
-                        attrib[i].offset
-                    );
-                    render.gl.enableVertexAttribArray(location);
-                }
                 //Draw
                 render.gl.drawElements(render.gl.TRIANGLES, this.obj.indice.length, render.gl.UNSIGNED_SHORT, 0);
             }else if(this.obj.drawType == "line"){
-                //Bind buffers
-                let buffer = render.gl.createBuffer();
-                render.gl.bindBuffer(render.gl.ARRAY_BUFFER, buffer);
-                render.gl.bufferData(render.gl.ARRAY_BUFFER, new Float32Array(this.obj.buffer), render.gl.STATIC_DRAW);
-                //Set attributes
-                let location = null;
-                let attrib = this.obj.program.attributes;
-                for(let j = 0; j < attrib.length; ++j){
-                    location = render.gl.getAttribLocation(this.obj.program.program, attrib[j].loc);
-                    render.gl.vertexAttribPointer(
-                        location,
-                        attrib[j].size,
-                        attrib[j].type,
-                        attrib[j].norm,
-                        attrib[j].stride,
-                        attrib[j].offset
-                    );
-                    render.gl.enableVertexAttribArray(location);
-                }
                 //Draw
                 render.gl.drawArrays(render.gl.LINES, 0, this.obj.buffer.length / 7);
             }
@@ -1112,7 +1162,15 @@ const render = {
             }
         }
         transform(transform, time = 0){
-
+            if(time = 0){
+                this.trans = transform;
+                if(this.minimapScale != null){
+                    mat4.identity(this.minimapScale);
+                    this.minimapScale[0] = this.obj.minimapScale;
+                    this.minimapScale[5] = this.obj.minimapScale;
+                    mat4.multiply(this.minimapScale, this.trans, this.minimapScale);
+                    }
+            }
         }
     }
 }
