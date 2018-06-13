@@ -749,8 +749,19 @@ const sag = {
         evt.clientY + sag.MOUSEMOVE_TRESHOLD < sag.mouseDownLocL[1])){
             let pos = [(evt.clientX - sag.mouseDownLocL[0]) * 2 / render.canvas.width,
                 (evt.clientY - sag.mouseDownLocL[1]) * -2 / render.canvas.height];
-            sag.worldPos = [sag.worldPos[0] + pos[0], sag.worldPos[1] + pos[1], 0]
+            let ratio = render.canvas.height / render.canvas.width;
+            sag.worldPos = [Math.max(-1 * sag.MAP_SIZE * 10 / (10 + render.scroll), Math.min(0, sag.worldPos[0] + pos[0])), Math.max(-1 * sag.MAP_SIZE * 10 / ((10 + render.scroll) * ratio), Math.min(0, sag.worldPos[1] + pos[1])), 0];
             sag.mouseDownLocL = [evt.clientX, evt.clientY];
+        }
+    },
+    mouseScroll: function(evt){
+        let delta = (evt.deltaY > 0) ? 1 : -1;
+        let newScroll = Math.min(20, Math.max(-9, render.scroll + delta));
+        if(render.scroll != newScroll){
+            render.scroll = newScroll;
+            let ratio = render.canvas.height / render.canvas.width; //TODO: Finished fixing centered scrolling
+            sag.worldPos = [Math.max(-1 * sag.MAP_SIZE * 10 / (10 + render.scroll), Math.min(0, sag.worldPos[0] + delta)), Math.max(-1 * sag.MAP_SIZE * 10 / ((10 + render.scroll) * ratio), Math.min(0, sag.worldPos[1] + delta)), 0];
+            render.resize();
         }
     },
     //GAME ----------------------------------------------------------------------------------------------------------------
@@ -819,9 +830,10 @@ const sag = {
         document.addEventListener('mouseup', sag.mouseUp);
         document.addEventListener('mousedown', sag.mouseDown);
         document.addEventListener('mousemove', sag.mouseMove);
+        document.addEventListener('wheel', sag.mouseScroll);
         render.objToDraw.push(new render.drawObj(render.gl, render.obj.testTrapazoid));
         let obj = new render.drawObj(render.gl, render.obj.testTrapazoid);
-        obj.setPos([.5, .5, 0]);
+        obj.setPos([10, 10, 0]);
         obj.setColor([1.0, 0.0, 0.0, 1.0])
         render.objToDraw.push(obj);
         obj = new render.drawObj(render.gl, render.obj.line);
@@ -831,6 +843,7 @@ const sag = {
 };
 const render = {
     canvas: null,
+    scroll: 0,
     gl: null,
     programs: null,
     obj: null,
@@ -852,7 +865,7 @@ const render = {
         varying vec4 fragColor;
         void main(){
             fragColor = vertColor + color;
-            gl_Position = proViewWorld * trans * vec4(vertPos, 1.0) + vec4(position, 0.0) + vec4(world, 0.0);
+            gl_Position = proViewWorld * trans * (vec4(vertPos, 1.0) + vec4(position, 0.0)) + vec4(world, 0.0);
         }
     `,
     vertFragShader: `
@@ -941,7 +954,7 @@ const render = {
                 buffer: []
             }
         };
-        {
+        { //Det the values of the line object
             let buffer = [];
             for(let i = 0; i < sag.MAP_SIZE + 1; ++i){
                 for(let j = 0; j < 4; ++j){
@@ -966,24 +979,17 @@ const render = {
             render.gl.useProgram(render.programs[program].program);
             render.programs[program].setUniforms();
         }
-
         mat4.identity(render.world);
-        render.world[0] = 100 / render.canvas.width;
-        render.world[5] = 100 / render.canvas.height;
         mat4.invert(render.invWorld, render.world);
         mat4.lookAt(render.view, [0, 0, -1], [0, 0, 0], [0, 1, 0]);
-        mat4.ortho(render.projection, 1, -1, -1, 1, .1, 10);
-        mat4.multiply(render.proViewWorld, render.projection, render.view);
-        mat4.multiply(render.proViewWorld, render.proViewWorld, render.world);
         render.resize();
     },
     resize: () => {
         render.canvas.height = render.canvas.clientHeight;
         render.canvas.width = render.canvas.clientWidth;
         render.gl.viewport(0, 0, render.gl.canvas.width, render.gl.canvas.height);
-        mat4.identity(render.world);
-        render.world[0] = 100 / render.canvas.width;
-        render.world[5] = 100 / render.canvas.height;
+        let ratio = render.canvas.height / render.canvas.width;
+        mat4.ortho(render.projection, 10 + render.scroll, -10 - render.scroll, ratio * (-10 - render.scroll), ratio * (10 + render.scroll), .1, 10);
         mat4.multiply(render.proViewWorld, render.projection, render.view);
         mat4.multiply(render.proViewWorld, render.proViewWorld, render.world);
     },
@@ -1029,21 +1035,27 @@ const render = {
             mat4.identity(this.trans);
         }
         draw(){
-            this.gl.useProgram(this.obj.program.program);
+            render.gl.useProgram(this.obj.program.program);
+                        //Set uniforms
+            render.gl.uniform3fv(this.obj.program.uniforms.position, this.pos);
+            render.gl.uniform3fv(this.obj.program.uniforms.world, sag.worldPos);
+            render.gl.uniformMatrix4fv(this.obj.program.uniforms.trans, render.gl.FALSE, this.trans);
+            render.gl.uniformMatrix4fv(this.obj.program.uniforms.proViewWorld, render.gl.FALSE, render.proViewWorld);
+            render.gl.uniform4fv(this.obj.program.uniforms.color, this.color);
             if(this.obj.drawType == "triangle"){
                 //Bind buffers
-                let buffer = this.gl.createBuffer();
-                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
-                this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.obj.buffer), this.gl.STATIC_DRAW);
-                buffer = this.gl.createBuffer();
-                this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, buffer);
-                this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.obj.indice), this.gl.STATIC_DRAW);
+                let buffer = render.gl.createBuffer();
+                render.gl.bindBuffer(render.gl.ARRAY_BUFFER, buffer);
+                render.gl.bufferData(render.gl.ARRAY_BUFFER, new Float32Array(this.obj.buffer), render.gl.STATIC_DRAW);
+                buffer = render.gl.createBuffer();
+                render.gl.bindBuffer(render.gl.ELEMENT_ARRAY_BUFFER, buffer);
+                render.gl.bufferData(render.gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.obj.indice), render.gl.STATIC_DRAW);
                 //Set attributes
                 let location = null;
                 let attrib = this.obj.program.attributes;
                 for(let i = 0; i < attrib.length; ++i){
-                    location = this.gl.getAttribLocation(this.obj.program.program, attrib[i].loc);
-                    this.gl.vertexAttribPointer(
+                    location = render.gl.getAttribLocation(this.obj.program.program, attrib[i].loc);
+                    render.gl.vertexAttribPointer(
                         location,
                         attrib[i].size,
                         attrib[i].type,
@@ -1051,44 +1063,32 @@ const render = {
                         attrib[i].stride,
                         attrib[i].offset
                     );
-                    this.gl.enableVertexAttribArray(location);
+                    render.gl.enableVertexAttribArray(location);
                 }
-                //Set uniforms
-                this.gl.uniform3fv(this.obj.program.uniforms.position, this.pos);
-                this.gl.uniform3fv(this.obj.program.uniforms.world, sag.worldPos);
-                this.gl.uniformMatrix4fv(this.obj.program.uniforms.trans, this.gl.FALSE, this.trans);
-                this.gl.uniformMatrix4fv(this.obj.program.uniforms.proViewWorld, this.gl.FALSE, render.proViewWorld);
-                this.gl.uniform4fv(this.obj.program.uniforms.color, this.color);
                 //Draw
-                this.gl.drawElements(this.gl.TRIANGLES, this.obj.indice.length, this.gl.UNSIGNED_SHORT, 0);
+                render.gl.drawElements(render.gl.TRIANGLES, this.obj.indice.length, render.gl.UNSIGNED_SHORT, 0);
             }else if(this.obj.drawType == "line"){
                 //Bind buffers
-                let buffer = this.gl.createBuffer();
-                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
-                this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(this.obj.buffer), this.gl.STATIC_DRAW);
+                let buffer = render.gl.createBuffer();
+                render.gl.bindBuffer(render.gl.ARRAY_BUFFER, buffer);
+                render.gl.bufferData(render.gl.ARRAY_BUFFER, new Float32Array(this.obj.buffer), render.gl.STATIC_DRAW);
                 //Set attributes
                 let location = null;
                 let attrib = this.obj.program.attributes;
-                for(let i = 0; i < attrib.length; ++i){
-                    location = this.gl.getAttribLocation(this.obj.program.program, attrib[i].loc);
-                    this.gl.vertexAttribPointer(
+                for(let j = 0; j < attrib.length; ++j){
+                    location = render.gl.getAttribLocation(this.obj.program.program, attrib[j].loc);
+                    render.gl.vertexAttribPointer(
                         location,
-                        attrib[i].size,
-                        attrib[i].type,
-                        attrib[i].norm,
-                        attrib[i].stride,
-                        attrib[i].offset
+                        attrib[j].size,
+                        attrib[j].type,
+                        attrib[j].norm,
+                        attrib[j].stride,
+                        attrib[j].offset
                     );
-                    this.gl.enableVertexAttribArray(location);
+                    render.gl.enableVertexAttribArray(location);
                 }
-                //Set uniforms
-                this.gl.uniform3fv(this.obj.program.uniforms.position, this.pos);
-                this.gl.uniform3fv(this.obj.program.uniforms.world, sag.worldPos);
-                this.gl.uniformMatrix4fv(this.obj.program.uniforms.trans, this.gl.FALSE, this.trans);
-                this.gl.uniformMatrix4fv(this.obj.program.uniforms.proViewWorld, this.gl.FALSE, render.proViewWorld);
-                this.gl.uniform4fv(this.obj.program.uniforms.color, this.color);
                 //Draw
-                this.gl.drawArrays(this.gl.LINES, 0, this.obj.buffer.length / 7);
+                render.gl.drawArrays(render.gl.LINES, 0, this.obj.buffer.length / 7);
             }
         }
         update(delta){

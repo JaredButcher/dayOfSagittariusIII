@@ -43,11 +43,6 @@ label, input{
     color: white;
     font-size: 18px;
 }
-#uiMap {
-    bottom: 0px;
-    right: 0px;
-    border-radius: 15px 0 0 0;
-}
 #uiEnemies{
     top: 0px;
     right: 0px;
