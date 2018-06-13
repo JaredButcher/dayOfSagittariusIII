@@ -744,28 +744,29 @@ const sag = {
     },
     mouseMove: function(evt){
         if(sag.mouseLIsDown && (evt.clientX - sag.MOUSEMOVE_TRESHOLD > sag.mouseDownLocL[0] || 
-        evt.clientX + sag.MOUSEMOVE_TRESHOLD < sag.mouseDownLocL[0] || 
-        evt.clientY - sag.MOUSEMOVE_TRESHOLD > sag.mouseDownLocL[1] || 
-        evt.clientY + sag.MOUSEMOVE_TRESHOLD < sag.mouseDownLocL[1])){
-            let pos = [(evt.clientX - sag.mouseDownLocL[0]) * 2 / render.canvas.width,
-                (evt.clientY - sag.mouseDownLocL[1]) * -2 / render.canvas.height];
-            let ratio = render.canvas.height / render.canvas.width;
-            sag.worldPos = [Math.max(-1 * sag.MAP_SIZE * 10 / (10 + render.scroll), Math.min(0, sag.worldPos[0] + pos[0])), Math.max(-1 * sag.MAP_SIZE * 10 / ((10 + render.scroll) * ratio), Math.min(0, sag.worldPos[1] + pos[1])), 0];
-            sag.mouseDownLocL = [evt.clientX, evt.clientY];
-        }
+            evt.clientX + sag.MOUSEMOVE_TRESHOLD < sag.mouseDownLocL[0] || 
+            evt.clientY - sag.MOUSEMOVE_TRESHOLD > sag.mouseDownLocL[1] || 
+            evt.clientY + sag.MOUSEMOVE_TRESHOLD < sag.mouseDownLocL[1])){
+                let pos = [(evt.clientX - sag.mouseDownLocL[0]) * 2 / render.canvas.width,
+                    (evt.clientY - sag.mouseDownLocL[1]) * -2 / render.canvas.height];
+                let ratio = render.canvas.height / render.canvas.width;
+                sag.worldPos = [Math.min(0, Math.max(-10 * sag.MAP_SIZE, sag.worldPos[0] + pos[0] * (10 + render.zoom))), Math.min(0, Math.max(-10 * sag.MAP_SIZE, sag.worldPos[1] + ratio * pos[1] * (10 + render.zoom))), 0];
+                sag.mouseDownLocL = [evt.clientX, evt.clientY];
+            }
     },
     mouseScroll: function(evt){
         let delta = (evt.deltaY > 0) ? 1 : -1;
-        let newScroll = Math.min(20, Math.max(-9, render.scroll + delta));
-        if(render.scroll != newScroll){
-            render.scroll = newScroll;
-            let ratio = render.canvas.height / render.canvas.width; //TODO: Finished fixing centered scrolling
-            sag.worldPos = [Math.max(-1 * sag.MAP_SIZE * 10 / (10 + render.scroll), Math.min(0, sag.worldPos[0] + delta)), Math.max(-1 * sag.MAP_SIZE * 10 / ((10 + render.scroll) * ratio), Math.min(0, sag.worldPos[1] + delta)), 0];
+        let newScroll = Math.min(15, Math.max(-5, sag.scroll + delta));
+        if(sag.scroll != newScroll){
+            let ratio = render.canvas.height / render.canvas.width;
+            sag.scroll = newScroll;
+            render.zoom = .1 * Math.pow(sag.scroll,2) + 2 * sag.scroll;
             render.resize();
         }
     },
     //GAME ----------------------------------------------------------------------------------------------------------------
     delta: 0,
+    scroll: 0,
     MAP_SIZE: 10,
     lastFrameTime: 0,
     MAX_FRAMERATE: 60,
@@ -777,6 +778,7 @@ const sag = {
     keysDown: null,
     keysDownKeys: null,
     MOUSEMOVE_TRESHOLD: 5,
+    SPEED: .02,
     worldPos: [0, 0, 0],
     loop: function(timestamp){
         if(!sag.running) return;
@@ -789,10 +791,9 @@ const sag = {
             return
         }
         sag.lastFrameTime = timestamp;
-        let speed = (sag.shiftDown) ? .1 : .03; //HERE LIE THY SCREEN SPEEDS
         for(let i = 0; i < sag.keysDownKeys.length; ++i){
             if(sag.keysDown[sag.keysDownKeys[i]].down){
-                sag.keysDown[sag.keysDownKeys[i]].on(speed);
+                sag.keysDown[sag.keysDownKeys[i]].on(((sag.shiftDown) ? sag.SPEED * 4 : sag.SPEED) * (render.zoom + 10));
             }
         }
         render.draw();
@@ -843,7 +844,7 @@ const sag = {
 };
 const render = {
     canvas: null,
-    scroll: 0,
+    zoom: 0,
     gl: null,
     programs: null,
     obj: null,
@@ -865,7 +866,7 @@ const render = {
         varying vec4 fragColor;
         void main(){
             fragColor = vertColor + color;
-            gl_Position = proViewWorld * trans * (vec4(vertPos, 1.0) + vec4(position, 0.0)) + vec4(world, 0.0);
+            gl_Position = proViewWorld * trans * (vec4(vertPos, 1.0) + vec4(position, 0.0) + vec4(world, 0.0));
         }
     `,
     vertFragShader: `
@@ -989,7 +990,7 @@ const render = {
         render.canvas.width = render.canvas.clientWidth;
         render.gl.viewport(0, 0, render.gl.canvas.width, render.gl.canvas.height);
         let ratio = render.canvas.height / render.canvas.width;
-        mat4.ortho(render.projection, 10 + render.scroll, -10 - render.scroll, ratio * (-10 - render.scroll), ratio * (10 + render.scroll), .1, 10);
+        mat4.ortho(render.projection, 10 + render.zoom, -10 - render.zoom, ratio * (-10 - render.zoom), ratio * (10 + render.zoom), .1, 10);
         mat4.multiply(render.proViewWorld, render.projection, render.view);
         mat4.multiply(render.proViewWorld, render.proViewWorld, render.world);
     },
